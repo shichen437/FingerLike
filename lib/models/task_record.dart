@@ -20,9 +20,10 @@ class TaskRecord {
   String get status {
     if (!completed) {
       if (errorMessage != null) {
-        final message = errorMessage!.contains(':') 
-            ? errorMessage!.split(':').last.trim()
-            : errorMessage!;
+        final message =
+            errorMessage!.contains(':')
+                ? errorMessage!.split(':').last.trim()
+                : errorMessage!;
         return '失败($message)';
       }
       return '取消';

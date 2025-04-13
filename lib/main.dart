@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // 添加这行导入
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -11,11 +11,11 @@ import 'widgets/settings_panel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (Platform.isMacOS || Platform.isWindows) {
     await hotKeyManager.unregisterAll();
     await windowManager.ensureInitialized();
-    
+
     WindowOptions windowOptions = const WindowOptions(
       size: Size(800, 600),
       minimumSize: Size(600, 400),
@@ -24,29 +24,31 @@ void main() async {
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
-    
+
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
     });
 
-    // 注册热键 - 适配hotkey_manager 0.2.0版本
     final hotKey = HotKey(
       key: LogicalKeyboardKey.keyC,
       modifiers: [HotKeyModifier.control],
-      scope: HotKeyScope.system, // 修改为系统全局范围
+      scope: HotKeyScope.system,
     );
     await hotKeyManager.register(
       hotKey,
       keyDownHandler: (hotKey) {
-        final state = Provider.of<ClickerState>(navigatorKey.currentContext!, listen: false);
+        final state = Provider.of<ClickerState>(
+          navigatorKey.currentContext!,
+          listen: false,
+        );
         if (state.isRunning) {
           state.cancelTask();
         }
       },
     );
   }
-  
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ClickerState(),
@@ -55,7 +57,6 @@ void main() async {
   );
 }
 
-// 在文件顶部添加
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class ClickerApp extends StatelessWidget {
@@ -65,7 +66,7 @@ class ClickerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FingerLike',
-      navigatorKey: navigatorKey,  // 添加这行
+      navigatorKey: navigatorKey,
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const MainTabScreen(),
     );
@@ -116,17 +117,18 @@ class _MainTabScreenState extends State<MainTabScreen> {
   Widget _buildTabButton(int index, IconData icon, String label) {
     return TextButton(
       style: TextButton.styleFrom(
-        foregroundColor: _selectedIndex == index 
-            ? Theme.of(context).primaryColor 
-            : Colors.grey,
-        padding: const EdgeInsets.symmetric(horizontal: 16), // 增加水平内边距
+        foregroundColor:
+            _selectedIndex == index
+                ? Theme.of(context).primaryColor
+                : Colors.grey,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
       ),
       onPressed: () => setState(() => _selectedIndex = index),
-      child: Row(  // 将Column改为Row
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon),
-          const SizedBox(width: 8), // 添加图标和文字之间的间距
+          const SizedBox(width: 8),
           Text(label),
         ],
       ),

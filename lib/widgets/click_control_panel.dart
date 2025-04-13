@@ -16,89 +16,89 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   @override
   Widget build(BuildContext context) {
     return Consumer<ClickerState>(
-      builder: (context, state, child) => SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '点击设置',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
+      builder:
+          (context, state, child) => SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildCountInput(),
-                            _buildControlButton(state),
+                            Text(
+                              '点击设置',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                _buildCountInput(),
+                                _buildControlButton(state),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildQuickSelectButtons(),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        _buildQuickSelectButtons(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (state.isRunning) ...[
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          _buildCountdownDisplay(state),
-                          const SizedBox(height: 24),
-                          _buildProgressDisplay(state),
-                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                if (state.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      state.error!,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-              ],
+                    const SizedBox(height: 24),
+                    if (state.isRunning) ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              _buildCountdownDisplay(state),
+                              const SizedBox(height: 24),
+                              _buildProgressDisplay(state),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (state.error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          state.error!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
-
-  // 移除_buildModeSelector方法定义
 
   Widget _buildQuickSelectButtons() {
     return Center(
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: [500, 1000, 3000].map((count) {
-          return ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
-            ),
-            onPressed: () => _controller.text = count.toString(),
-            child: Text('$count 次', style: const TextStyle(fontSize: 16)),
-          );
-        }).toList(),
+        children:
+            [500, 1000, 3000].map((count) {
+              return ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () => _controller.text = count.toString(),
+                child: Text('$count 次', style: const TextStyle(fontSize: 16)),
+              );
+            }).toList(),
       ),
     );
   }
@@ -189,7 +189,7 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
       padding: const EdgeInsets.only(left: 16),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(120, 48), // 设置按钮最小尺寸
+          minimumSize: const Size(120, 48),
         ),
         onPressed: () {
           if (state.isRunning) {
@@ -215,7 +215,6 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
 
   Widget _buildCountInput() {
     return Expanded(
-      // 添加 Expanded 让输入框占据剩余空间
       child: TextFormField(
         controller: _controller,
         keyboardType: TextInputType.number,
@@ -240,7 +239,4 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     );
   }
 
-  // 删除从这里开始的第二个 build 方法
-  // @override
-  // Widget build(BuildContext context) { ... }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';  // 添加这行导入
+import 'package:flutter/material.dart';
 import 'package:async/async.dart';
 import '../services/mouse_service.dart';
 import 'dart:math';
-import '../models/task_record.dart';  // 添加这行导入
+import '../models/task_record.dart';
 
 class ClickerState with ChangeNotifier {
   final TextEditingController _controller = TextEditingController();
@@ -29,7 +29,6 @@ class ClickerState with ChangeNotifier {
     notifyListeners();
   }
 
-  // 修改模式相关的属性
   ClickMode _clickMode = ClickMode.bionic;
   ClickMode get clickMode => _clickMode;
 
@@ -49,7 +48,7 @@ class ClickerState with ChangeNotifier {
     _taskStartTime = DateTime.now();
     _progress = 0;
     notifyListeners();
-  
+
     try {
       // 倒计时逻辑，同时实时更新鼠标位置
       _remainingSeconds = 7;
@@ -58,7 +57,7 @@ class ClickerState with ChangeNotifier {
           // 实时获取鼠标位置
           _clickPosition = await MouseService.getCurrentPosition();
           notifyListeners();
-    
+
           await Future.delayed(const Duration(seconds: 1));
           if (!_isRunning) break;
           _remainingSeconds--;
@@ -68,7 +67,7 @@ class ClickerState with ChangeNotifier {
             totalClicks,
             _progress,
             false,
-            errorMessage:  e.message,
+            errorMessage: e.message,
             duration: DateTime.now().difference(_taskStartTime!),
           );
           _error = e.message;
@@ -77,9 +76,9 @@ class ClickerState with ChangeNotifier {
           return;
         }
       }
-  
-      if (!_isRunning) return;  // 如果任务被取消，不再继续执行
-  
+
+      if (!_isRunning) return;
+
       // 最后一次获取鼠标位置，这将是实际任务的起始位置
       try {
         _clickPosition = await MouseService.getCurrentPosition();
@@ -89,13 +88,13 @@ class ClickerState with ChangeNotifier {
           totalClicks,
           _progress,
           false,
-          errorMessage:  e.message,
+          errorMessage: e.message,
           duration: DateTime.now().difference(_taskStartTime!),
         );
         _error = e.message;
         notifyListeners();
-        _isRunning = false;  // 确保任务状态被重置
-        return;  // 直接返回，不再继续执行后续代码
+        _isRunning = false;
+        return;
       }
 
       // 执行点击任务
@@ -104,13 +103,13 @@ class ClickerState with ChangeNotifier {
       _currentTask = CancelableOperation.fromFuture(
         Future(() async {
           final random = Random();
-          final basePosition = _clickPosition!; // 保存基础位置
+          final basePosition = _clickPosition!;
 
           for (var i = 0; i < totalClicks; i++) {
             try {
               if (_clickMode == ClickMode.bionic) {
                 // 计算浮动位置
-                final xOffset = random.nextInt(41) - 20; // -20 到 20 之间
+                final xOffset = random.nextInt(41) - 20;
                 final yOffset = random.nextInt(41) - 20;
 
                 final clickPosition = Point(
@@ -120,7 +119,7 @@ class ClickerState with ChangeNotifier {
 
                 await MouseService.clickAt(clickPosition);
               } else {
-                await MouseService.click(); // 普通模式保持原样
+                await MouseService.click();
               }
 
               _progress = i + 1;
@@ -128,10 +127,10 @@ class ClickerState with ChangeNotifier {
 
               // 计算基础间隔时间
               final baseDelay = 120 + (i ~/ 300) * 30;
-              final actualDelay = min(600, baseDelay); // 确保不超过600ms
+              final actualDelay = min(600, baseDelay);
 
               // 添加随机浮动
-              final variation = random.nextInt(41) - 20; // -20 到 20 之间的随机数
+              final variation = random.nextInt(41) - 20;
               await Future.delayed(
                 Duration(milliseconds: actualDelay + variation),
               );
@@ -145,12 +144,12 @@ class ClickerState with ChangeNotifier {
       );
       try {
         await _currentTask?.value;
-        
+
         // 任务完成时添加记录
         _addTaskRecord(
-          totalClicks, 
-          _progress, 
-          _error == null, // 根据是否有错误决定完成状态
+          totalClicks,
+          _progress,
+          _error == null,
           errorMessage: _error,
           duration: DateTime.now().difference(startTime),
         );
@@ -171,11 +170,11 @@ class ClickerState with ChangeNotifier {
       _addTaskRecord(
         totalClicks,
         _progress,
-        false, // 强制标记为未完成
+        false,
         errorMessage: e.message,
         duration: DateTime.now().difference(_taskStartTime!),
       );
-      _error = e.message; // 确保错误信息被设置
+      _error = e.message;
       notifyListeners();
       rethrow;
     } finally {
@@ -188,7 +187,7 @@ class ClickerState with ChangeNotifier {
 
   int _maxRecords = 20;
   int get maxRecords => _maxRecords;
-  
+
   void setMaxRecords(int value) {
     _maxRecords = value.clamp(10, 100);
     // 如果新限制小于当前记录数，删除最早的记录
@@ -199,22 +198,24 @@ class ClickerState with ChangeNotifier {
   }
 
   void _addTaskRecord(
-    int targetClicks, 
-    int actualClicks, 
+    int targetClicks,
+    int actualClicks,
     bool completed, {
     String? errorMessage,
     Duration? duration,
   }) {
-    _taskRecords.add(TaskRecord(
-      timestamp: DateTime.now(), // 使用当前时间而非开始时间
-      mode: _clickMode.displayName,
-      targetClicks: targetClicks,
-      actualClicks: actualClicks,
-      completed: completed,
-      errorMessage: errorMessage,
-      duration: duration,
-    ));
-    
+    _taskRecords.add(
+      TaskRecord(
+        timestamp: DateTime.now(),
+        mode: _clickMode.displayName,
+        targetClicks: targetClicks,
+        actualClicks: actualClicks,
+        completed: completed,
+        errorMessage: errorMessage,
+        duration: duration,
+      ),
+    );
+
     while (_taskRecords.length > _maxRecords) {
       _taskRecords.removeAt(0);
     }
@@ -223,23 +224,23 @@ class ClickerState with ChangeNotifier {
 
   void cancelTask() {
     if (!_isRunning) return;
-  
+
     final currentProgress = _progress;
-    final targetClicks = _controller.text.isNotEmpty 
-        ? int.tryParse(_controller.text) ?? 0
-        : 0;
-    
+    final targetClicks =
+        _controller.text.isNotEmpty ? int.tryParse(_controller.text) ?? 0 : 0;
+
     _currentTask?.cancel();
-    
+
     _addTaskRecord(
       targetClicks,
       currentProgress,
       false,
-      duration: _taskStartTime != null 
-        ? DateTime.now().difference(_taskStartTime!)
-        : null,
+      duration:
+          _taskStartTime != null
+              ? DateTime.now().difference(_taskStartTime!)
+              : null,
     );
-  
+
     _remainingSeconds = 7;
     _progress = 0;
     _isRunning = false;
@@ -248,10 +249,10 @@ class ClickerState with ChangeNotifier {
   }
 
   @override
-void dispose() {
-  _controller.dispose();
-  super.dispose();
-}
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void clearAllRecords() {
     _taskRecords.clear();
@@ -271,5 +272,3 @@ extension ClickModeExtension on ClickMode {
     }
   }
 }
-
-
