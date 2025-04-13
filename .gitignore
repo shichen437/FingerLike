@@ -1,0 +1,71 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# 补充 macOS 平台特定忽略
+**/macos/Flutter/Generated.xcconfig
+**/macos/Flutter/Flutter.podspec
+**/macos/.symlinks/
+
+# 忽略 Xcode 用户数据
+**/xcuserdata/
+*.xcuserstate
+
+# 忽略 Flutter 构建产物
+flutter_assets/
+app.so
+
+# 忽略 IDE 配置文件
+*.iml
+*.swm
+*.swn
+*.swo
+*.swp
+
+# 忽略本地配置文件
+/local.properties
+/Flutter/app.so
+
+# 忽略调试构建目录
+/profile/
+/debug/
+
+# 忽略 CocoaPods 依赖 (如果使用)
+**/Pods/
