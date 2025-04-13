@@ -19,7 +19,13 @@ class TaskRecord {
 
   String get status {
     if (!completed) {
-      return '取消';  // 取消状态直接显示"取消"
+      if (errorMessage != null) {
+        final message = errorMessage!.contains(':') 
+            ? errorMessage!.split(':').last.trim()
+            : errorMessage!;
+        return '失败($message)';
+      }
+      return '取消';
     }
     return '完成';
   }

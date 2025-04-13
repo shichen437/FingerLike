@@ -23,7 +23,6 @@ class MouseService {
   static Future<void> clickAt(Point position) async {
     try {
       await _channel.invokeMethod('clickAt', {
-        // 保持与原生端一致的方法名称
         'x': position.x,
         'y': position.y,
       });

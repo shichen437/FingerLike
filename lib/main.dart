@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // 添加这行导入
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -28,6 +29,22 @@ void main() async {
       await windowManager.show();
       await windowManager.focus();
     });
+
+    // 注册热键 - 适配hotkey_manager 0.2.0版本
+    final hotKey = HotKey(
+      key: LogicalKeyboardKey.keyC,
+      modifiers: [HotKeyModifier.control],
+      scope: HotKeyScope.system, // 修改为系统全局范围
+    );
+    await hotKeyManager.register(
+      hotKey,
+      keyDownHandler: (hotKey) {
+        final state = Provider.of<ClickerState>(navigatorKey.currentContext!, listen: false);
+        if (state.isRunning) {
+          state.cancelTask();
+        }
+      },
+    );
   }
   
   runApp(
@@ -38,6 +55,9 @@ void main() async {
   );
 }
 
+// 在文件顶部添加
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class ClickerApp extends StatelessWidget {
   const ClickerApp({super.key});
 
@@ -45,6 +65,7 @@ class ClickerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FingerLike',
+      navigatorKey: navigatorKey,  // 添加这行
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const MainTabScreen(),
     );

@@ -53,23 +53,51 @@ class ClickerState with ChangeNotifier {
     try {
       // 倒计时逻辑，同时实时更新鼠标位置
       _remainingSeconds = 7;
-      while (_remainingSeconds > 0 && _isRunning) {  // 添加_isRunning检查
-        // 实时获取鼠标位置
-        _clickPosition = await MouseService.getCurrentPosition();
-        notifyListeners();
-  
-        await Future.delayed(const Duration(seconds: 1));
-        if (!_isRunning) break;  // 如果任务被取消，立即退出
-        _remainingSeconds--;
-        notifyListeners();
+      while (_remainingSeconds > 0 && _isRunning) {
+        try {
+          // 实时获取鼠标位置
+          _clickPosition = await MouseService.getCurrentPosition();
+          notifyListeners();
+    
+          await Future.delayed(const Duration(seconds: 1));
+          if (!_isRunning) break;
+          _remainingSeconds--;
+          notifyListeners();
+        } on ClickException catch (e) {
+          _addTaskRecord(
+            totalClicks,
+            _progress,
+            false,
+            errorMessage:  e.message,
+            duration: DateTime.now().difference(_taskStartTime!),
+          );
+          _error = e.message;
+          _isRunning = false;
+          notifyListeners();
+          return;
+        }
       }
   
       if (!_isRunning) return;  // 如果任务被取消，不再继续执行
   
       // 最后一次获取鼠标位置，这将是实际任务的起始位置
-      _clickPosition = await MouseService.getCurrentPosition();
-      notifyListeners();
-  
+      try {
+        _clickPosition = await MouseService.getCurrentPosition();
+        notifyListeners();
+      } on ClickException catch (e) {
+        _addTaskRecord(
+          totalClicks,
+          _progress,
+          false,
+          errorMessage:  e.message,
+          duration: DateTime.now().difference(_taskStartTime!),
+        );
+        _error = e.message;
+        notifyListeners();
+        _isRunning = false;  // 确保任务状态被重置
+        return;  // 直接返回，不再继续执行后续代码
+      }
+
       // 执行点击任务
       _progress = 0;
       final startTime = DateTime.now();
@@ -115,28 +143,43 @@ class ClickerState with ChangeNotifier {
           }
         }),
       );
-      await _currentTask?.value;
-      
-      // 任务完成时添加记录
-      _addTaskRecord(
-        totalClicks, 
-        _progress, 
-        true,
-        duration: DateTime.now().difference(startTime),
-      );
+      try {
+        await _currentTask?.value;
+        
+        // 任务完成时添加记录
+        _addTaskRecord(
+          totalClicks, 
+          _progress, 
+          _error == null, // 根据是否有错误决定完成状态
+          errorMessage: _error,
+          duration: DateTime.now().difference(startTime),
+        );
+      } catch (e) {
+        _addTaskRecord(
+          totalClicks,
+          _progress,
+          false,
+          errorMessage: e.toString(),
+          duration: DateTime.now().difference(startTime),
+        );
+        rethrow;
+      } finally {
+        _isRunning = false;
+        notifyListeners();
+      }
     } on ClickException catch (e) {
       _addTaskRecord(
         totalClicks,
         _progress,
-        false,
-        errorMessage: e.message.contains('需要辅助功能权限') 
-          ? '需要辅助功能权限' 
-          : null,
+        false, // 强制标记为未完成
+        errorMessage: e.message,
         duration: DateTime.now().difference(_taskStartTime!),
       );
+      _error = e.message; // 确保错误信息被设置
+      notifyListeners();
       rethrow;
     } finally {
-      if (_isRunning) { // 只有任务仍在运行时才执行清理
+      if (_isRunning) {
         _isRunning = false;
         notifyListeners();
       }
