@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';  // 添加这行导入
 import 'package:async/async.dart';
 import '../services/mouse_service.dart';
 import 'dart:math';
+import '../models/task_record.dart';  // 添加这行导入
 
 class ClickerState with ChangeNotifier {
+  final TextEditingController _controller = TextEditingController();
   int _remainingSeconds = 7;
   int _progress = 0;
   CancelableOperation? _currentTask;
@@ -35,31 +38,41 @@ class ClickerState with ChangeNotifier {
     notifyListeners();
   }
 
+  final List<TaskRecord> _taskRecords = [];
+  List<TaskRecord> get taskRecords => List.unmodifiable(_taskRecords);
+  DateTime? _taskStartTime;
+
   Future<void> startTask(int totalClicks) async {
+    _controller.text = totalClicks.toString();
     _isRunning = true;
     _error = null;
+    _taskStartTime = DateTime.now();
+    _progress = 0;
     notifyListeners();
-
+  
     try {
       // 倒计时逻辑，同时实时更新鼠标位置
       _remainingSeconds = 7;
-      while (_remainingSeconds > 0) {
+      while (_remainingSeconds > 0 && _isRunning) {  // 添加_isRunning检查
         // 实时获取鼠标位置
         _clickPosition = await MouseService.getCurrentPosition();
         notifyListeners();
-
+  
         await Future.delayed(const Duration(seconds: 1));
+        if (!_isRunning) break;  // 如果任务被取消，立即退出
         _remainingSeconds--;
         notifyListeners();
       }
-
+  
+      if (!_isRunning) return;  // 如果任务被取消，不再继续执行
+  
       // 最后一次获取鼠标位置，这将是实际任务的起始位置
       _clickPosition = await MouseService.getCurrentPosition();
       notifyListeners();
-
+  
       // 执行点击任务
       _progress = 0;
-      // 修改点击任务部分
+      final startTime = DateTime.now();
       _currentTask = CancelableOperation.fromFuture(
         Future(() async {
           final random = Random();
@@ -103,19 +116,102 @@ class ClickerState with ChangeNotifier {
         }),
       );
       await _currentTask?.value;
+      
+      // 任务完成时添加记录
+      _addTaskRecord(
+        totalClicks, 
+        _progress, 
+        true,
+        duration: DateTime.now().difference(startTime),
+      );
+    } on ClickException catch (e) {
+      _addTaskRecord(
+        totalClicks,
+        _progress,
+        false,
+        errorMessage: e.message.contains('需要辅助功能权限') 
+          ? '需要辅助功能权限' 
+          : null,
+        duration: DateTime.now().difference(_taskStartTime!),
+      );
+      rethrow;
     } finally {
-      _isRunning = false;
-      _clickPosition = null;
-      notifyListeners();
+      if (_isRunning) { // 只有任务仍在运行时才执行清理
+        _isRunning = false;
+        notifyListeners();
+      }
     }
   }
 
+  int _maxRecords = 20;
+  int get maxRecords => _maxRecords;
+  
+  void setMaxRecords(int value) {
+    _maxRecords = value.clamp(10, 100);
+    // 如果新限制小于当前记录数，删除最早的记录
+    while (_taskRecords.length > _maxRecords) {
+      _taskRecords.removeAt(0);
+    }
+    notifyListeners();
+  }
+
+  void _addTaskRecord(
+    int targetClicks, 
+    int actualClicks, 
+    bool completed, {
+    String? errorMessage,
+    Duration? duration,
+  }) {
+    _taskRecords.add(TaskRecord(
+      timestamp: DateTime.now(), // 使用当前时间而非开始时间
+      mode: _clickMode.displayName,
+      targetClicks: targetClicks,
+      actualClicks: actualClicks,
+      completed: completed,
+      errorMessage: errorMessage,
+      duration: duration,
+    ));
+    
+    while (_taskRecords.length > _maxRecords) {
+      _taskRecords.removeAt(0);
+    }
+    notifyListeners();
+  }
+
   void cancelTask() {
+    if (!_isRunning) return;
+  
+    final currentProgress = _progress;
+    final targetClicks = _controller.text.isNotEmpty 
+        ? int.tryParse(_controller.text) ?? 0
+        : 0;
+    
     _currentTask?.cancel();
+    
+    _addTaskRecord(
+      targetClicks,
+      currentProgress,
+      false,
+      duration: _taskStartTime != null 
+        ? DateTime.now().difference(_taskStartTime!)
+        : null,
+    );
+  
     _remainingSeconds = 7;
     _progress = 0;
     _isRunning = false;
     _error = null;
+    notifyListeners();
+  }
+
+  @override
+void dispose() {
+  _controller.dispose();
+  super.dispose();
+}
+
+  void clearAllRecords() {
+    _taskRecords.clear();
     notifyListeners();
   }
 }
@@ -132,3 +228,5 @@ extension ClickModeExtension on ClickMode {
     }
   }
 }
+
+
