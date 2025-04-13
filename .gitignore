@@ -27,6 +27,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+test/
 
 # Symbolication related
 app.*.symbols
@@ -69,3 +70,5 @@ app.so
 
 # 忽略 CocoaPods 依赖 (如果使用)
 **/Pods/
+
+FingerLike.*

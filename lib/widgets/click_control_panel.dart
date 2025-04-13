@@ -16,63 +16,66 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   @override
   Widget build(BuildContext context) {
     return Consumer<ClickerState>(
-      builder: (context, state, child) => SingleChildScrollView(  // 添加滚动视图
-        child: Form(
-          key: _formKey,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        _buildModeSelector(state),
-                        const SizedBox(height: 24),
-                        Row(  // 使用 Row 将输入框和按钮放在一行
+      builder:
+          (context, state, child) => SingleChildScrollView(
+            // 添加滚动视图
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
                           children: [
-                            _buildCountInput(),
-                            _buildControlButton(state),
+                            _buildModeSelector(state),
+                            const SizedBox(height: 24),
+                            Row(
+                              // 使用 Row 将输入框和按钮放在一行
+                              children: [
+                                _buildCountInput(),
+                                _buildControlButton(state),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildQuickSelectButtons(),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        _buildQuickSelectButtons(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (state.isRunning) ...[
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          _buildCountdownDisplay(state),
-                          const SizedBox(height: 24),
-                          _buildProgressDisplay(state),
-                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                if (state.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      state.error!,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-              ],
+                    const SizedBox(height: 24),
+                    if (state.isRunning) ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              _buildCountdownDisplay(state),
+                              const SizedBox(height: 24),
+                              _buildProgressDisplay(state),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (state.error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          state.error!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -86,18 +89,22 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
           const SizedBox(width: 16),
           DropdownButton<ClickMode>(
             value: state.clickMode,
-            items: ClickMode.values.map((mode) {
-              return DropdownMenuItem(
-                value: mode,
-                child: Text(
-                  mode.displayName,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              );
-            }).toList(),
-            onChanged: state.isRunning ? null : (mode) {
-              if (mode != null) state.setClickMode(mode);
-            },
+            items:
+                ClickMode.values.map((mode) {
+                  return DropdownMenuItem(
+                    value: mode,
+                    child: Text(
+                      mode.displayName,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  );
+                }).toList(),
+            onChanged:
+                state.isRunning
+                    ? null
+                    : (mode) {
+                      if (mode != null) state.setClickMode(mode);
+                    },
           ),
         ],
       ),
@@ -109,15 +116,19 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
       spacing: 12,
       runSpacing: 12,
       alignment: WrapAlignment.center,
-      children: [500, 1000, 3000].map((count) {
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-          onPressed: () => _controller.text = count.toString(),
-          child: Text('$count 次', style: const TextStyle(fontSize: 16)),
-        );
-      }).toList(),
+      children:
+          [500, 1000, 3000].map((count) {
+            return ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              onPressed: () => _controller.text = count.toString(),
+              child: Text('$count 次', style: const TextStyle(fontSize: 16)),
+            );
+          }).toList(),
     );
   }
 
@@ -136,10 +147,12 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
           tween: Tween(begin: 7.0, end: 0.0),
           duration: Duration(seconds: state.remainingSeconds),
           builder: (context, value, _) {
-            return RepaintBoundary(  // 添加 RepaintBoundary
+            return RepaintBoundary(
+              // 添加 RepaintBoundary
               child: Column(
                 children: [
-                  SizedBox(  // 固定大小
+                  SizedBox(
+                    // 固定大小
                     width: 48,
                     height: 48,
                     child: CircularProgressIndicator(
@@ -149,8 +162,10 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text('倒计时: ${state.remainingSeconds}秒', 
-                    style: const TextStyle(fontSize: 18)),
+                  Text(
+                    '倒计时: ${state.remainingSeconds}秒',
+                    style: const TextStyle(fontSize: 18),
+                  ),
                 ],
               ),
             );
@@ -161,7 +176,8 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   }
 
   Widget _buildProgressDisplay(ClickerState state) {
-    final percentage = (state.progress / (int.tryParse(_controller.text) ?? 1)) * 100;
+    final percentage =
+        (state.progress / (int.tryParse(_controller.text) ?? 1)) * 100;
     return Column(
       children: [
         Container(
@@ -202,7 +218,7 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
       padding: const EdgeInsets.only(left: 16),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(120, 48),  // 设置按钮最小尺寸
+          minimumSize: const Size(120, 48), // 设置按钮最小尺寸
         ),
         onPressed: () {
           if (state.isRunning) {
@@ -227,7 +243,8 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   }
 
   Widget _buildCountInput() {
-    return Expanded(  // 添加 Expanded 让输入框占据剩余空间
+    return Expanded(
+      // 添加 Expanded 让输入框占据剩余空间
       child: TextFormField(
         controller: _controller,
         keyboardType: TextInputType.number,

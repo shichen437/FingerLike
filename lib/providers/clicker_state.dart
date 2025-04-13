@@ -47,7 +47,7 @@ class ClickerState with ChangeNotifier {
         // 实时获取鼠标位置
         _clickPosition = await MouseService.getCurrentPosition();
         notifyListeners();
-        
+
         await Future.delayed(const Duration(seconds: 1));
         _remainingSeconds--;
         notifyListeners();
@@ -63,23 +63,23 @@ class ClickerState with ChangeNotifier {
       _currentTask = CancelableOperation.fromFuture(
         Future(() async {
           final random = Random();
-          final basePosition = _clickPosition!;  // 保存基础位置
+          final basePosition = _clickPosition!; // 保存基础位置
 
           for (var i = 0; i < totalClicks; i++) {
             try {
               if (_clickMode == ClickMode.bionic) {
                 // 计算浮动位置
-                final xOffset = random.nextInt(41) - 20;  // -20 到 20 之间
+                final xOffset = random.nextInt(41) - 20; // -20 到 20 之间
                 final yOffset = random.nextInt(41) - 20;
-                
+
                 final clickPosition = Point(
                   basePosition.x + xOffset,
                   basePosition.y + yOffset,
                 );
-                
+
                 await MouseService.clickAt(clickPosition);
               } else {
-                await MouseService.click();  // 普通模式保持原样
+                await MouseService.click(); // 普通模式保持原样
               }
 
               _progress = i + 1;
@@ -88,10 +88,12 @@ class ClickerState with ChangeNotifier {
               // 计算基础间隔时间
               final baseDelay = 120 + (i ~/ 300) * 30;
               final actualDelay = min(600, baseDelay); // 确保不超过600ms
-              
+
               // 添加随机浮动
               final variation = random.nextInt(41) - 20; // -20 到 20 之间的随机数
-              await Future.delayed(Duration(milliseconds: actualDelay + variation));
+              await Future.delayed(
+                Duration(milliseconds: actualDelay + variation),
+              );
             } on ClickException catch (e) {
               _error = e.message;
               notifyListeners();
@@ -118,10 +120,7 @@ class ClickerState with ChangeNotifier {
   }
 }
 
-enum ClickMode {
-  bionic,
-  normal,
-}
+enum ClickMode { bionic, normal }
 
 extension ClickModeExtension on ClickMode {
   String get displayName {

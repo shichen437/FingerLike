@@ -6,10 +6,7 @@ class MouseService {
   static Future<Point> getCurrentPosition() async {
     try {
       final result = await _channel.invokeMethod('getCurrentPosition');
-      return Point(
-        result['x'] as double,
-        result['y'] as double,
-      );
+      return Point(result['x'] as double, result['y'] as double);
     } on PlatformException catch (e) {
       throw ClickException('获取鼠标位置失败: ${e.message}');
     }
@@ -25,7 +22,8 @@ class MouseService {
 
   static Future<void> clickAt(Point position) async {
     try {
-      await _channel.invokeMethod('clickAt', {  // 保持与原生端一致的方法名称
+      await _channel.invokeMethod('clickAt', {
+        // 保持与原生端一致的方法名称
         'x': position.x,
         'y': position.y,
       });
@@ -43,6 +41,6 @@ class ClickException implements Exception {
 class Point {
   final double x;
   final double y;
-  
+
   Point(this.x, this.y);
 }
