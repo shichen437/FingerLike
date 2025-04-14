@@ -4,6 +4,7 @@ import 'package:async/async.dart';
 import '../services/mouse_service.dart';
 import 'dart:math';
 import '../models/task_record.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ClickerState with ChangeNotifier {
   final TextEditingController _controller = TextEditingController();
@@ -32,14 +33,124 @@ class ClickerState with ChangeNotifier {
   ClickMode _clickMode = ClickMode.bionic;
   ClickMode get clickMode => _clickMode;
 
+  // 保留这个带持久化的setClickMode方法，移除上面的简单版本
   void setClickMode(ClickMode mode) {
     _clickMode = mode;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('clickMode', mode.index);
+    });
     notifyListeners();
   }
 
   final List<TaskRecord> _taskRecords = [];
   List<TaskRecord> get taskRecords => List.unmodifiable(_taskRecords);
   DateTime? _taskStartTime;
+
+  Color _primaryColor = Colors.blueGrey;
+  Color get primaryColor => _primaryColor;
+
+  final List<Color> availableColors = [
+    Colors.blueGrey,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.red,
+    Colors.teal,
+  ];
+
+  Future<void> loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    _primaryColor = Color(prefs.getInt('primaryColor') ?? Colors.blueGrey.value);
+    _clickMode = ClickMode.values[prefs.getInt('clickMode') ?? 0];
+    _maxRecords = prefs.getInt('maxRecords') ?? 20;
+    notifyListeners();
+  }
+
+  void setPrimaryColor(Color color) {
+    _primaryColor = color;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('primaryColor', color.value);
+    });
+    notifyListeners();
+  }
+
+  // 删除这里的第二个setClickMode方法定义
+  int _maxRecords = 20;
+  int get maxRecords => _maxRecords;
+
+  void setMaxRecords(int value) {
+    _maxRecords = value.clamp(10, 100);
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('maxRecords', _maxRecords);
+    });
+    while (_taskRecords.length > _maxRecords) {
+      _taskRecords.removeAt(0);
+    }
+    notifyListeners();
+  }
+
+  void _addTaskRecord(
+    int targetClicks,
+    int actualClicks,
+    bool completed, {
+    String? errorMessage,
+    Duration? duration,
+  }) {
+    _taskRecords.add(
+      TaskRecord(
+        timestamp: DateTime.now(),
+        mode: _clickMode.displayName,
+        targetClicks: targetClicks,
+        actualClicks: actualClicks,
+        completed: completed,
+        errorMessage: errorMessage,
+        duration: duration,
+      ),
+    );
+
+    while (_taskRecords.length > _maxRecords) {
+      _taskRecords.removeAt(0);
+    }
+    notifyListeners();
+  }
+
+  void cancelTask() {
+    if (!_isRunning) return;
+
+    final currentProgress = _progress;
+    final targetClicks =
+        _controller.text.isNotEmpty ? int.tryParse(_controller.text) ?? 0 : 0;
+
+    _currentTask?.cancel();
+
+    _addTaskRecord(
+      targetClicks,
+      currentProgress,
+      false,
+      duration:
+          _taskStartTime != null
+              ? DateTime.now().difference(_taskStartTime!)
+              : null,
+    );
+
+    _remainingSeconds = 7;
+    _progress = 0;
+    _isRunning = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void clearAllRecords() {
+    _taskRecords.clear();
+    notifyListeners();
+  }
 
   Future<void> startTask(int totalClicks) async {
     _controller.text = totalClicks.toString();
@@ -183,80 +294,6 @@ class ClickerState with ChangeNotifier {
         notifyListeners();
       }
     }
-  }
-
-  int _maxRecords = 20;
-  int get maxRecords => _maxRecords;
-
-  void setMaxRecords(int value) {
-    _maxRecords = value.clamp(10, 100);
-    // 如果新限制小于当前记录数，删除最早的记录
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
-    }
-    notifyListeners();
-  }
-
-  void _addTaskRecord(
-    int targetClicks,
-    int actualClicks,
-    bool completed, {
-    String? errorMessage,
-    Duration? duration,
-  }) {
-    _taskRecords.add(
-      TaskRecord(
-        timestamp: DateTime.now(),
-        mode: _clickMode.displayName,
-        targetClicks: targetClicks,
-        actualClicks: actualClicks,
-        completed: completed,
-        errorMessage: errorMessage,
-        duration: duration,
-      ),
-    );
-
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
-    }
-    notifyListeners();
-  }
-
-  void cancelTask() {
-    if (!_isRunning) return;
-
-    final currentProgress = _progress;
-    final targetClicks =
-        _controller.text.isNotEmpty ? int.tryParse(_controller.text) ?? 0 : 0;
-
-    _currentTask?.cancel();
-
-    _addTaskRecord(
-      targetClicks,
-      currentProgress,
-      false,
-      duration:
-          _taskStartTime != null
-              ? DateTime.now().difference(_taskStartTime!)
-              : null,
-    );
-
-    _remainingSeconds = 7;
-    _progress = 0;
-    _isRunning = false;
-    _error = null;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void clearAllRecords() {
-    _taskRecords.clear();
-    notifyListeners();
   }
 }
 

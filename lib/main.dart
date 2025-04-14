@@ -11,6 +11,9 @@ import 'widgets/settings_panel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final state = ClickerState();
+  await state.loadPreferences();
 
   if (Platform.isMacOS || Platform.isWindows) {
     await hotKeyManager.unregisterAll();
@@ -51,7 +54,7 @@ void main() async {
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ClickerState(),
+      create: (_) => state,
       child: const ClickerApp(),
     ),
   );
@@ -64,11 +67,19 @@ class ClickerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FingerLike',
-      navigatorKey: navigatorKey,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MainTabScreen(),
+    return Consumer<ClickerState>(
+      builder: (context, state, _) {
+        return MaterialApp(
+          title: 'FingerLike',
+          theme: ThemeData(
+            colorScheme: ColorScheme.light(
+              primary: state.primaryColor,
+              secondary: state.primaryColor.withOpacity(0.8),
+            ),
+          ),
+          home: const MainTabScreen(),
+        );
+      },
     );
   }
 }

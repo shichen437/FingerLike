@@ -12,9 +12,9 @@ class MouseService {
     }
   }
 
-  static Future<void> click() async {
+  static Future<void> click({int count = 1}) async {
     try {
-      await _channel.invokeMethod('click', {'count': 1});
+      await _channel.invokeMethod('click', {'count': count});
     } on PlatformException catch (e) {
       throw ClickException('点击失败: ${e.message}');
     }

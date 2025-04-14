@@ -8,42 +8,78 @@ class SettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<ClickerState>(context);
-
+    
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 主题颜色卡片
+            SizedBox(
+              width: double.infinity,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('主题颜色', style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: state.availableColors.map((color) {
+                          return GestureDetector(
+                            onTap: () => state.setPrimaryColor(color),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(20),
+                                border: state.primaryColor == color
+                                    ? Border.all(color: Colors.white, width: 3)
+                                    : null,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 模式选择卡片
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('点击模式', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 24),
+                    const Text('点击模式', style: TextStyle(fontSize: 18)),
+                    const SizedBox(height: 8),
                     _buildModeButtons(state),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
+
+            // 历史记录限制卡片
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('记录设置', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 24),
+                    const Text('历史记录限制', style: TextStyle(fontSize: 18)),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Text(
-                          '最大记录数量: ${state.maxRecords}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(width: 16),
                         Expanded(
                           child: Slider(
                             value: state.maxRecords.toDouble(),
@@ -56,6 +92,8 @@ class SettingsPanel extends StatelessWidget {
                             },
                           ),
                         ),
+                        const SizedBox(width: 16),
+                        Text('${state.maxRecords}条'),
                       ],
                     ),
                   ],
@@ -67,31 +105,26 @@ class SettingsPanel extends StatelessWidget {
       ),
     );
   }
+}
 
-  // 添加回模式选择按钮构建方法
-  Widget _buildModeButtons(ClickerState state) {
-    return Column(
-      children:
-          ClickMode.values.map((mode) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: ListTile(
-                title: Text(mode.displayName),
-                leading: Radio<ClickMode>(
-                  value: mode,
-                  groupValue: state.clickMode,
-                  onChanged:
-                      state.isRunning
-                          ? null
-                          : (value) {
-                            if (value != null) {
-                              state.setClickMode(value);
-                            }
-                          },
-                ),
-              ),
-            );
-          }).toList(),
-    );
-  }
+// 添加回模式选择按钮构建方法
+Widget _buildModeButtons(ClickerState state) {
+  return Column(
+    children: ClickMode.values.map((mode) {
+      return ListTile(
+        title: Text(mode.displayName),
+        leading: Radio<ClickMode>(
+          value: mode,
+          groupValue: state.clickMode,
+          onChanged: state.isRunning
+              ? null
+              : (value) {
+                  if (value != null) {
+                    state.setClickMode(value);
+                  }
+                },
+        ),
+      );
+    }).toList(),
+  );
 }
