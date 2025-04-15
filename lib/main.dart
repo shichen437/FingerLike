@@ -8,78 +8,58 @@ import 'providers/clicker_state.dart';
 import 'widgets/click_control_panel.dart';
 import 'widgets/records_panel.dart';
 import 'widgets/settings_panel.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  final state = ClickerState();
-  await state.loadPreferences();
-
-  if (Platform.isMacOS || Platform.isWindows) {
-    await hotKeyManager.unregisterAll();
-    await windowManager.ensureInitialized();
-
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 600),
-      minimumSize: Size(600, 400),
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
-
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
-
-    final hotKey = HotKey(
-      key: LogicalKeyboardKey.keyC,
-      modifiers: [HotKeyModifier.control],
-      scope: HotKeyScope.system,
-    );
-    await hotKeyManager.register(
-      hotKey,
-      keyDownHandler: (hotKey) {
-        final state = Provider.of<ClickerState>(
-          navigatorKey.currentContext!,
-          listen: false,
-        );
-        if (state.isRunning) {
-          state.cancelTask();
-        }
-      },
-    );
-  }
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => state,
-      child: const ClickerApp(),
-    ),
-  );
-}
+import 'widgets/about_panel.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
+import 'l10n/app_localizations_delegate.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class ClickerApp extends StatelessWidget {
-  const ClickerApp({super.key});
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(FingerLike());
+}
 
+class FingerLike extends StatelessWidget {
+  final ClickerState state = ClickerState();
+  
   @override
   Widget build(BuildContext context) {
-    return Consumer<ClickerState>(
-      builder: (context, state, _) {
-        return MaterialApp(
-          title: 'FingerLike',
-          theme: ThemeData(
-            colorScheme: ColorScheme.light(
-              primary: state.primaryColor,
-              secondary: state.primaryColor.withOpacity(0.8),
+    return ChangeNotifierProvider(
+      create: (context) => state,
+      child: Consumer<ClickerState>(
+        builder: (context, state, child) {
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'FingerLike',
+            themeMode: state.themeMode,
+            theme: ThemeData(
+              colorScheme: ColorScheme.light(
+                primary: state.primaryColor,
+                secondary: state.primaryColor.withOpacity(0.8),
+              ),
+              brightness: Brightness.light,
             ),
-          ),
-          home: const MainTabScreen(),
-        );
-      },
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.dark(
+                primary: state.primaryColor,
+                secondary: state.primaryColor.withOpacity(0.8),
+              ),
+              brightness: Brightness.dark,
+            ),
+            routes: {'/settings': (context) => const SettingsPanel()},
+            home: const MainTabScreen(),
+            locale: state.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -91,6 +71,10 @@ class MainTabScreen extends StatefulWidget {
   State<MainTabScreen> createState() => _MainTabScreenState();
 }
 
+void navigateToSettings(BuildContext context) {
+  Navigator.pushNamed(context, '/settings');
+}
+
 class _MainTabScreenState extends State<MainTabScreen> {
   int _selectedIndex = 0;
 
@@ -98,6 +82,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     ClickControlPanel(),
     RecordsPanel(),
     SettingsPanel(),
+    AboutPanel(),
   ];
 
   @override
@@ -105,17 +90,18 @@ class _MainTabScreenState extends State<MainTabScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FingerLike'),
+        elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
-            height: 48,
             color: Theme.of(context).primaryColor.withOpacity(0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildTabButton(0, Icons.home, '主页'),
-                _buildTabButton(1, Icons.history, '记录'),
-                _buildTabButton(2, Icons.settings, '设置'),
+                _buildTab(0, '主页'),
+                _buildTab(1, '历史'),
+                _buildTab(2, '设置'),
+                _buildTab(3, '关于'),  // 添加新的标签
               ],
             ),
           ),
@@ -125,23 +111,82 @@ class _MainTabScreenState extends State<MainTabScreen> {
     );
   }
 
-  Widget _buildTabButton(int index, IconData icon, String label) {
-    return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor:
-            _selectedIndex == index
-                ? Theme.of(context).primaryColor
-                : Colors.grey,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-      ),
-      onPressed: () => setState(() => _selectedIndex = index),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
+  Widget _buildTab(int index, String title) {
+    final isSelected = _selectedIndex == index;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+
+    String tabTitle;
+    switch (index) {
+      case 0:
+        tabTitle = l10n.get('home');
+        break;
+      case 1:
+        tabTitle = l10n.get('history');
+        break;
+      case 2:
+        tabTitle = l10n.get('settings');
+        break;
+      case 3:
+        tabTitle = l10n.get('about');
+        break;
+      default:
+        tabTitle = '';
+    }
+
+    IconData icon;
+    switch (index) {
+      case 0:
+        icon = Icons.mouse;
+        break;
+      case 1:
+        icon = Icons.history;
+        break;
+      case 2:
+        icon = Icons.settings;
+        break;
+      case 3:
+        icon = Icons.info_outline;  // 添加关于页面的图标
+        break;
+      default:
+        icon = Icons.circle;
+    }
+
+    return InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? theme.primaryColor : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color:
+                  isSelected
+                      ? (isDark ? Colors.white : theme.primaryColor)
+                      : (isDark ? Colors.grey[400] : Colors.grey),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              tabTitle,
+              style: TextStyle(
+                color: isSelected
+                    ? (isDark ? Colors.white : theme.primaryColor)
+                    : (isDark ? Colors.grey[400] : Colors.grey),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,46 +1,148 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
+import '../providers/mixins/click_mode_mixin.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
 
+  Widget _buildLanguageSetting(BuildContext context) {
+    final state = Provider.of<ClickerState>(context);
+    final l10n = AppLocalizations.of(context);
+
+    return ListTile(
+      title: Text(l10n.get('language')),
+      trailing: ToggleButtons(
+        constraints: BoxConstraints(
+          minHeight: 36.0,
+          minWidth: 60.0, // 增加最小宽度
+        ),
+        isSelected: [
+          state.locale.languageCode == 'zh',
+          state.locale.languageCode == 'en',
+        ],
+        onPressed: (int index) {
+          final newLocale = index == 0 ? Locale('zh') : Locale('en');
+          state.changeLocale(newLocale);
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // 调整垂直边距
+            child: Text('中文'),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // 调整垂直边距
+            child: Text('English'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeButtons(BuildContext context, ClickerState state) {
+    return Column(
+      children: ClickMode.values.map((mode) {
+        return ListTile(
+          title: Text(mode.getDisplayName(context)),
+          leading: Radio<ClickMode>(
+            value: mode,
+            groupValue: state.clickMode,
+            onChanged: state.isRunning ? null : (value) {
+              if (value != null) {
+                state.setClickMode(value);
+              }
+            },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<ClickerState>(context);
-    
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 主题颜色卡片
-            SizedBox(
-              width: double.infinity,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    final l10n = AppLocalizations.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.get('clickMode'), style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                _buildModeButtons(context, state), // 修改这里：传入 context
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.get('historyLimit'), style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Slider(
+                        value: state.maxRecords.toDouble(),
+                        min: 10,
+                        max: 100,
+                        divisions: 9,
+                        label: state.maxRecords.toString(),
+                        onChanged: (value) {
+                          state.setMaxRecords(value.toInt());
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text('${state.maxRecords}${l10n.get('records')}'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // 界面设置卡片
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 添加标题
+                Text(l10n.get('interfaceSettings'), style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                // 主题颜色设置
+                ListTile(
+                  title: Row(
                     children: [
-                      const Text('主题颜色', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 8),
+                      Text(l10n.get('themeColor')),
+                      Spacer(), // 使用 Spacer 将选项推到右边
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: state.availableColors.map((color) {
+                          final isSelected = state.primaryColor == color;
                           return GestureDetector(
                             onTap: () => state.setPrimaryColor(color),
                             child: Container(
-                              width: 40,
-                              height: 40,
+                              width: 24,
+                              height: 24,
                               decoration: BoxDecoration(
                                 color: color,
                                 borderRadius: BorderRadius.circular(20),
-                                border: state.primaryColor == color
-                                    ? Border.all(color: Colors.white, width: 3)
-                                    : null,
+                                border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+                                boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, spreadRadius: 2)] : null,
                               ),
                             ),
                           );
@@ -49,82 +151,64 @@ class SettingsPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 模式选择卡片
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('点击模式', style: TextStyle(fontSize: 18)),
-                    const SizedBox(height: 8),
-                    _buildModeButtons(state),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 历史记录限制卡片
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('历史记录限制', style: TextStyle(fontSize: 18)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Slider(
-                            value: state.maxRecords.toDouble(),
-                            min: 10,
-                            max: 100,
-                            divisions: 9,
-                            label: state.maxRecords.toString(),
-                            onChanged: (value) {
-                              state.setMaxRecords(value.toInt());
-                            },
+                const SizedBox(height: 16),
+                // 外观模式设置
+                ListTile(
+                  title: Row(
+                    children: [
+                      Text(l10n.get('appearance')),
+                      Spacer(),
+                      ToggleButtons(
+                        constraints: BoxConstraints(minHeight: 36.0), // 调整高度
+                        isSelected: [
+                          state.themeMode == ThemeMode.system,
+                          state.themeMode == ThemeMode.light,
+                          state.themeMode == ThemeMode.dark,
+                        ],
+                        onPressed: (int index) {
+                          ThemeMode selectedMode;
+                          switch (index) {
+                            case 0:
+                              selectedMode = ThemeMode.system;
+                              break;
+                            case 1:
+                              selectedMode = ThemeMode.light;
+                              break;
+                            case 2:
+                              selectedMode = ThemeMode.dark;
+                              break;
+                            default:
+                              return;
+                          }
+                          state.setThemeMode(selectedMode);
+                        },
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            child: Text(l10n.get('followSystem')),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text('${state.maxRecords}条'),
-                      ],
-                    ),
-                  ],
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            child: Text(l10n.get('lightMode')),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            child: Text(l10n.get('darkMode')),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                // 语言设置
+                _buildLanguageSetting(context),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+      ],
     );
   }
-}
-
-// 添加回模式选择按钮构建方法
-Widget _buildModeButtons(ClickerState state) {
-  return Column(
-    children: ClickMode.values.map((mode) {
-      return ListTile(
-        title: Text(mode.displayName),
-        leading: Radio<ClickMode>(
-          value: mode,
-          groupValue: state.clickMode,
-          onChanged: state.isRunning
-              ? null
-              : (value) {
-                  if (value != null) {
-                    state.setClickMode(value);
-                  }
-                },
-        ),
-      );
-    }).toList(),
-  );
 }

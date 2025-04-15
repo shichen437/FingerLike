@@ -3,137 +3,78 @@ import 'package:flutter/material.dart';
 import 'package:async/async.dart';
 import '../services/mouse_service.dart';
 import 'dart:math';
-import '../models/task_record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import '../theme/app_colors.dart';
+import 'mixins/theme_state_mixin.dart';
+import 'mixins/records_state_mixin.dart';
+import 'mixins/click_mode_mixin.dart';
 
-class ClickerState with ChangeNotifier {
+class ClickerState
+    with ChangeNotifier, ThemeStateMixin, RecordsStateMixin, ClickModeMixin {
   final TextEditingController _controller = TextEditingController();
-  int _remainingSeconds = 7;
-  int _progress = 0;
+  Timer? _countdownTimer;
   CancelableOperation? _currentTask;
-  bool _isRunning = false;
-  Point? _clickPosition;
-  Point? get clickPosition => _clickPosition;
-
-  int get remainingSeconds => _remainingSeconds;
-  int get progress => _progress;
-  bool get isRunning => _isRunning;
-
-  String? _error;
-  String? get error => _error;
-
-  bool _isBionicMode = false;
-  bool get isBionicMode => _isBionicMode;
-
-  void toggleMode() {
-    _isBionicMode = !_isBionicMode;
-    notifyListeners();
-  }
-
-  ClickMode _clickMode = ClickMode.bionic;
-  ClickMode get clickMode => _clickMode;
-
-  // 保留这个带持久化的setClickMode方法，移除上面的简单版本
-  void setClickMode(ClickMode mode) {
-    _clickMode = mode;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt('clickMode', mode.index);
-    });
-    notifyListeners();
-  }
-
-  final List<TaskRecord> _taskRecords = [];
-  List<TaskRecord> get taskRecords => List.unmodifiable(_taskRecords);
   DateTime? _taskStartTime;
 
-  Color _primaryColor = Colors.blueGrey;
-  Color get primaryColor => _primaryColor;
+  double _remainingSeconds = 7.0;
+  int _progress = 0;
+  bool _isRunning = false;
+  Point? _clickPosition;
+  String? _error;
 
-  final List<Color> availableColors = [
-    Colors.blueGrey,
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.red,
-    Colors.teal,
-  ];
+  // Getters
+  double get remainingSeconds => _remainingSeconds;
+  int get progress => _progress;
+  bool get isRunning => _isRunning;
+  Point? get clickPosition => _clickPosition;
+  String? get error => _error;
 
   Future<void> loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    _primaryColor = Color(prefs.getInt('primaryColor') ?? Colors.blueGrey.value);
-    _clickMode = ClickMode.values[prefs.getInt('clickMode') ?? 0];
-    _maxRecords = prefs.getInt('maxRecords') ?? 20;
-    notifyListeners();
-  }
-
-  void setPrimaryColor(Color color) {
-    _primaryColor = color;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt('primaryColor', color.value);
-    });
-    notifyListeners();
-  }
-
-  // 删除这里的第二个setClickMode方法定义
-  int _maxRecords = 20;
-  int get maxRecords => _maxRecords;
-
-  void setMaxRecords(int value) {
-    _maxRecords = value.clamp(10, 100);
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt('maxRecords', _maxRecords);
-    });
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
-    }
-    notifyListeners();
-  }
-
-  void _addTaskRecord(
-    int targetClicks,
-    int actualClicks,
-    bool completed, {
-    String? errorMessage,
-    Duration? duration,
-  }) {
-    _taskRecords.add(
-      TaskRecord(
-        timestamp: DateTime.now(),
-        mode: _clickMode.displayName,
-        targetClicks: targetClicks,
-        actualClicks: actualClicks,
-        completed: completed,
-        errorMessage: errorMessage,
-        duration: duration,
-      ),
+    setPrimaryColor(
+      Color(prefs.getInt('primaryColor') ?? AppColors.defaultThemeColor.value),
     );
-
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
-    }
-    notifyListeners();
+    setThemeMode(
+      ThemeMode.values[prefs.getInt('themeMode') ?? ThemeMode.system.index],
+    );
+    setClickMode(ClickMode.values[prefs.getInt('clickMode') ?? 0]);
+    setMaxRecords(prefs.getInt('maxRecords') ?? 20);
   }
 
   void cancelTask() {
     if (!_isRunning) return;
-
+  
     final currentProgress = _progress;
     final targetClicks =
         _controller.text.isNotEmpty ? int.tryParse(_controller.text) ?? 0 : 0;
-
+  
     _currentTask?.cancel();
-
-    _addTaskRecord(
+    _countdownTimer?.cancel();
+  
+    if (_currentTask != null) {
+      _currentTask!.cancel();
+      _currentTask = null;
+    }
+  
+    // 将 mode 参数改为枚举值
+    addTaskRecord(
       targetClicks,
       currentProgress,
       false,
-      duration:
-          _taskStartTime != null
-              ? DateTime.now().difference(_taskStartTime!)
-              : null,
+      duration: _taskStartTime != null 
+          ? DateTime.now().difference(_taskStartTime!)
+          : null,
+      mode: clickMode.toString(), // 转换为字符串
     );
-
+  
+    _resetState();
+  }
+  
+  void _resetState() {
+    _currentTask = null;
+    _countdownTimer = null;
+    _taskStartTime = null; // 清除任务开始时间
     _remainingSeconds = 7;
     _progress = 0;
     _isRunning = false;
@@ -143,13 +84,9 @@ class ClickerState with ChangeNotifier {
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _controller.dispose();
     super.dispose();
-  }
-
-  void clearAllRecords() {
-    _taskRecords.clear();
-    notifyListeners();
   }
 
   Future<void> startTask(int totalClicks) async {
@@ -161,25 +98,41 @@ class ClickerState with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 倒计时逻辑，同时实时更新鼠标位置
-      _remainingSeconds = 7;
+      _remainingSeconds = 7.0;
+      final countdownStartTime = DateTime.now();
+
+      _countdownTimer?.cancel();
+      _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
+        timer,
+      ) {
+        if (!_isRunning || _remainingSeconds <= 0) {
+          timer.cancel();
+          return;
+        }
+
+        final now = DateTime.now();
+        _remainingSeconds = max(
+          0.0,
+          7.0 - now.difference(countdownStartTime).inMilliseconds / 1000,
+        );
+        notifyListeners();
+      });
+
+      // 等待倒计时结束
       while (_remainingSeconds > 0 && _isRunning) {
         try {
-          // 实时获取鼠标位置
           _clickPosition = await MouseService.getCurrentPosition();
-          notifyListeners();
-
-          await Future.delayed(const Duration(seconds: 1));
-          if (!_isRunning) break;
-          _remainingSeconds--;
-          notifyListeners();
+          await Future.delayed(const Duration(milliseconds: 100));
         } on ClickException catch (e) {
-          _addTaskRecord(
+          _countdownTimer?.cancel();
+          // 修改所有 addTaskRecord 调用
+          addTaskRecord(
             totalClicks,
             _progress,
             false,
             errorMessage: e.message,
             duration: DateTime.now().difference(_taskStartTime!),
+            mode: clickMode.toString(), // 直接传递枚举值
           );
           _error = e.message;
           _isRunning = false;
@@ -193,18 +146,20 @@ class ClickerState with ChangeNotifier {
       // 最后一次获取鼠标位置，这将是实际任务的起始位置
       try {
         _clickPosition = await MouseService.getCurrentPosition();
-        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 100));
       } on ClickException catch (e) {
-        _addTaskRecord(
+        _countdownTimer?.cancel();
+        addTaskRecord(
           totalClicks,
           _progress,
           false,
           errorMessage: e.message,
           duration: DateTime.now().difference(_taskStartTime!),
+          mode: clickMode.toString(), // 修改这里：将 ClickMode 转换为字符串
         );
         _error = e.message;
-        notifyListeners();
         _isRunning = false;
+        notifyListeners();
         return;
       }
 
@@ -218,7 +173,7 @@ class ClickerState with ChangeNotifier {
 
           for (var i = 0; i < totalClicks; i++) {
             try {
-              if (_clickMode == ClickMode.bionic) {
+              if (clickMode == ClickMode.bionic) {
                 // 计算浮动位置
                 final xOffset = random.nextInt(41) - 20;
                 final yOffset = random.nextInt(41) - 20;
@@ -257,20 +212,22 @@ class ClickerState with ChangeNotifier {
         await _currentTask?.value;
 
         // 任务完成时添加记录
-        _addTaskRecord(
+        addTaskRecord(
           totalClicks,
           _progress,
           _error == null,
           errorMessage: _error,
           duration: DateTime.now().difference(startTime),
+          mode: clickMode.toString(), // 转换为字符串
         );
       } catch (e) {
-        _addTaskRecord(
+        addTaskRecord(
           totalClicks,
           _progress,
           false,
           errorMessage: e.toString(),
           duration: DateTime.now().difference(startTime),
+          mode: clickMode.toString(), // 转换为字符串
         );
         rethrow;
       } finally {
@@ -278,12 +235,13 @@ class ClickerState with ChangeNotifier {
         notifyListeners();
       }
     } on ClickException catch (e) {
-      _addTaskRecord(
+      addTaskRecord(
         totalClicks,
         _progress,
         false,
         errorMessage: e.message,
         duration: DateTime.now().difference(_taskStartTime!),
+        mode: clickMode.toString(), // 转换为字符串
       );
       _error = e.message;
       notifyListeners();
@@ -293,19 +251,17 @@ class ClickerState with ChangeNotifier {
         _isRunning = false;
         notifyListeners();
       }
+      _countdownTimer?.cancel();
     }
   }
-}
 
-enum ClickMode { bionic, normal }
-
-extension ClickModeExtension on ClickMode {
-  String get displayName {
-    switch (this) {
-      case ClickMode.bionic:
-        return '仿生模式';
-      case ClickMode.normal:
-        return '普通模式';
-    }
+  // 添加locale相关属性和方法
+  Locale _locale = const Locale('zh'); // 默认中文
+  
+  Locale get locale => _locale;
+  
+  void changeLocale(Locale newLocale) {
+    _locale = newLocale;
+    notifyListeners();
   }
 }

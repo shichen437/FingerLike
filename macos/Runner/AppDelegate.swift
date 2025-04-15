@@ -8,8 +8,18 @@ class AppDelegate: FlutterAppDelegate {
         return true
     }
     
+    @objc func toggleWindow() {
+        if let window = NSApp.windows.first {
+            if window.isVisible {
+                window.orderOut(nil)
+            } else {
+                window.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+    }
+    
     override func applicationDidFinishLaunching(_ notification: Notification) {
-        // 修复控制器获取方式
         guard let controller = mainFlutterWindow?.contentViewController as? FlutterViewController else {
             fatalError("无法获取 Flutter 控制器")
         }
@@ -43,7 +53,7 @@ class AppDelegate: FlutterAppDelegate {
                     result(nil)
                 }
                 
-            case "clickAt":  // 原生端已正确实现的方法名称
+            case "clickAt":
                 guard let args = call.arguments as? [String: Any],
                       let x = args["x"] as? Double,
                       let y = args["y"] as? Double else {
@@ -73,7 +83,7 @@ class AppDelegate: FlutterAppDelegate {
                 DispatchQueue.global(qos: .userInitiated).async {
                     let point = CGPoint(x: x, y: y)
                     CGWarpMouseCursorPosition(point)
-                    CGAssociateMouseAndMouseCursorPosition(1)  // 使用 1 替代 Int32(true)
+                    CGAssociateMouseAndMouseCursorPosition(1)
                     result(nil)
                 }
             
@@ -92,59 +102,66 @@ class AppDelegate: FlutterAppDelegate {
             }
         }
         
-        super.applicationDidFinishLaunching(notification) // 必须调用父类方法
-        
-        // 在使用 MouseClickHandler 前添加内联定义
-        // 修复 MouseClickHandler 内联定义中的 post 方法调用
-        class MouseClickHandler {
-            static func checkAccessibilityPermission() -> Bool {
-                let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-                return AXIsProcessTrustedWithOptions(options as CFDictionary)
-            }
-            
-            static func getCurrentPosition() -> [String: Any] {
-                let mouseLocation = NSEvent.mouseLocation
-                let screenFrame = NSScreen.main?.frame ?? .zero
-                
-                // 转换坐标系（macOS 使用左下角为原点，我们需要转换为左上角为原点）
-                let y = screenFrame.height - mouseLocation.y
-                
-                return [
-                    "x": mouseLocation.x,
-                    "y": y
-                ]
-            }
-            
-            static func performMouseClick(count: Int) {
-                // 创建鼠标按下事件
-                let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
-                                      mouseCursorPosition: .zero, mouseButton: .left)
-                // 创建鼠标抬起事件
-                let eventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
-                                    mouseCursorPosition: .zero, mouseButton: .left)
-                
-                // 循环执行点击
-                for _ in 0..<count {
-                    eventDown?.post(tap: .cghidEventTap)  // 修复：添加 tap: 参数标签
-                    eventUp?.post(tap: .cghidEventTap)    // 修复：添加 tap: 参数标签
-                    Thread.sleep(forTimeInterval: 0.001) // 保持点击间隔
-                }
-            }
-            
-            static func performMouseClickAt(x: Double, y: Double) {
-                let position = CGPoint(x: x, y: y)
-                
-                // 创建鼠标按下事件
-                let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
-                                      mouseCursorPosition: position, mouseButton: .left)
-                // 创建鼠标抬起事件
-                let eventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
-                                    mouseCursorPosition: position, mouseButton: .left)
-                
-                eventDown?.post(tap: .cghidEventTap)
-                eventUp?.post(tap: .cghidEventTap)
-                Thread.sleep(forTimeInterval: 0.001)
-            }
+        super.applicationDidFinishLaunching(notification)
+    }
+    
+    // 处理 Dock 图标点击
+    override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            showMainWindow()
         }
+        return true
+    }
+    
+    @objc func showMainWindow() {
+        if let window = NSApp.windows.first {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+public class MouseClickHandler: NSObject {
+    public static func checkAccessibilityPermission() -> Bool {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        return AXIsProcessTrustedWithOptions(options as CFDictionary)
+    }
+    
+    public static func getCurrentPosition() -> [String: CGFloat] {
+        let mouseLocation = NSEvent.mouseLocation
+        let screenFrame = NSScreen.main?.frame ?? .zero
+        
+        // 转换坐标系
+        let y = screenFrame.height - mouseLocation.y
+        
+        return [
+            "x": mouseLocation.x,
+            "y": y
+        ]
+    }
+    
+    public static func performMouseClick(count: Int) {
+        let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
+                              mouseCursorPosition: .zero, mouseButton: .left)
+        let eventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
+                            mouseCursorPosition: .zero, mouseButton: .left)
+        
+        for _ in 0..<count {
+            eventDown?.post(tap: .cghidEventTap)
+            eventUp?.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+    }
+    
+    public static func performMouseClickAt(x: Double, y: Double) {
+        let position = CGPoint(x: x, y: y)
+        let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
+                              mouseCursorPosition: position, mouseButton: .left)
+        let eventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
+                            mouseCursorPosition: position, mouseButton: .left)
+        
+        eventDown?.post(tap: .cghidEventTap)
+        eventUp?.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: 0.001)
     }
 }

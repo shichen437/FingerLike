@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+
 class TaskRecord {
   final DateTime timestamp;
   final String mode;
@@ -17,17 +20,34 @@ class TaskRecord {
     this.duration,
   });
 
-  String get status {
+  String getStatus(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (!completed) {
       if (errorMessage != null) {
         final message =
             errorMessage!.contains(':')
                 ? errorMessage!.split(':').last.trim()
                 : errorMessage!;
-        return '失败($message)';
+        return '${l10n.get("failed")}($message)';
       }
-      return '取消';
+      return l10n.get('cancelled');
     }
-    return '完成';
+    return l10n.get('completed');
+  }
+
+  Color getStatusColor(BuildContext context) {
+    final theme = Theme.of(context);
+    if (!completed) {
+      return theme.primaryColor.withOpacity(0.7);
+    }
+    return theme.primaryColor;
+  }
+
+  Color getStatusBackgroundColor(BuildContext context) {
+    final theme = Theme.of(context);
+    if (!completed) {
+      return theme.primaryColor.withOpacity(0.1);
+    }
+    return theme.primaryColor.withOpacity(0.15);
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
+import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart'; // 添加这行导入
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -12,12 +14,38 @@ class ClickControlPanel extends StatefulWidget {
 class _ClickControlPanelState extends State<ClickControlPanel> {
   final _controller = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context); // 确保在 build 方法中定义 l10n
     return Consumer<ClickerState>(
-      builder:
-          (context, state, child) => SingleChildScrollView(
+      builder: (context, state, child) {
+        return KeyboardListener(
+          focusNode: _focusNode,
+          onKeyEvent: (event) {
+            if (event is KeyDownEvent && 
+                event.logicalKey == LogicalKeyboardKey.keyC &&
+                HardwareKeyboard.instance.isControlPressed &&
+                state.isRunning) {
+              state.cancelTask();
+            }
+          },
+          child: SingleChildScrollView(
             child: Form(
               key: _formKey,
               child: Padding(
@@ -32,14 +60,14 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '点击设置',
+                              l10n.get('clickSettings'),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 24),
                             Row(
                               children: [
-                                _buildCountInput(),
-                                _buildControlButton(state),
+                                _buildCountInput(l10n), // 传递 l10n
+                                _buildControlButton(state, l10n), // 传递 l10n
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -55,9 +83,9 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              _buildCountdownDisplay(state),
+                              _buildCountdownDisplay(state, l10n), // 传递 l10n
                               const SizedBox(height: 24),
-                              _buildProgressDisplay(state),
+                              _buildProgressDisplay(state, l10n), // 传递 l10n
                             ],
                           ),
                         ),
@@ -78,6 +106,8 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
               ),
             ),
           ),
+        );
+      },
     );
   }
 
@@ -103,66 +133,90 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     );
   }
 
-  Widget _buildCountdownDisplay(ClickerState state) {
+  Widget _buildCountdownDisplay(ClickerState state, AppLocalizations l10n) {
     return Column(
       children: [
         if (state.clickPosition != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Text(
-              '点击位置: (${state.clickPosition!.x.toStringAsFixed(0)}, ${state.clickPosition!.y.toStringAsFixed(0)})',
+              '${l10n.get('clickPosition')}: (${state.clickPosition!.x.toStringAsFixed(0)}, ${state.clickPosition!.y.toStringAsFixed(0)})',
               style: const TextStyle(fontSize: 16),
             ),
           ),
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 7.0, end: 0.0),
-          duration: Duration(seconds: state.remainingSeconds),
-          builder: (context, value, _) {
-            return RepaintBoundary(
-              // 添加 RepaintBoundary
-              child: Column(
-                children: [
-                  SizedBox(
-                    // 固定大小
-                    width: 48,
-                    height: 48,
-                    child: CircularProgressIndicator(
-                      value: 1 - (value / 7),
-                      strokeWidth: 6,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+        Row(
+          children: [
+            Text(
+              '${l10n.get('countdownText')}: ${state.remainingSeconds.toStringAsFixed(1)}${l10n.get('seconds')}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.6, end: 1.0),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeInOut,
+                onEnd: () {
+                  setState(() {});
+                },
+                builder: (context, pulseValue, child) {
+                  final theme = Theme.of(context);
+                  return Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(
+                            0.3 * pulseValue,
+                          ),
+                          blurRadius: 8 * pulseValue,
+                          spreadRadius: 2 * pulseValue,
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '倒计时: ${state.remainingSeconds}秒',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ],
+                    clipBehavior: Clip.antiAlias,
+                    child: LinearProgressIndicator(
+                      value: (state.remainingSeconds / 7).clamp(0.0, 1.0),
+                      backgroundColor:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]
+                              : Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.primaryColor.withOpacity(pulseValue),
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildProgressDisplay(ClickerState state) {
+  Widget _buildProgressDisplay(ClickerState state, AppLocalizations l10n) {
     final percentage =
         (state.progress / (int.tryParse(_controller.text) ?? 1)) * 100;
+    final theme = Theme.of(context);
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.blue.shade200),
+            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: percentage / 100,
               minHeight: 20,
-              backgroundColor: Colors.blue.shade50,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade400),
+              backgroundColor:
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]
+                      : Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
             ),
           ),
         ),
@@ -171,11 +225,11 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '已点击: ${state.progress} 次',
+              '${l10n.get('clicked')}: ${state.progress} ${l10n.get('times')}',
               style: const TextStyle(fontSize: 16),
             ),
             Text(
-              '完成: ${percentage.toStringAsFixed(1)}%',
+              '${l10n.get('completed')}: ${percentage.toStringAsFixed(1)}%',
               style: const TextStyle(fontSize: 16),
             ),
           ],
@@ -184,13 +238,11 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     );
   }
 
-  Widget _buildControlButton(ClickerState state) {
+  Widget _buildControlButton(ClickerState state, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(120, 48),
-        ),
+        style: ElevatedButton.styleFrom(minimumSize: const Size(120, 48)),
         onPressed: () {
           if (state.isRunning) {
             state.cancelTask();
@@ -200,43 +252,36 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
           }
         },
         child: Text(
-          state.isRunning ? '取消任务' : '开始任务',
+          state.isRunning ? l10n.get('cancelTask') : l10n.get('startTask'),
           style: const TextStyle(fontSize: 16),
         ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _buildCountInput() {
+  Widget _buildCountInput(AppLocalizations l10n) {
     return Expanded(
       child: TextFormField(
         controller: _controller,
         keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: '点击次数',
-          border: OutlineInputBorder(),
-          suffixText: '次',
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: InputDecoration(
+          labelText: l10n.get('clickCount'),
+          border: const OutlineInputBorder(),
+          suffixText: l10n.get('times'),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         style: const TextStyle(fontSize: 16),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return '请输入点击次数';
+            return l10n.get('pleaseInputClickCount');
           }
           final num = int.tryParse(value);
           if (num == null || num <= 0) {
-            return '请输入有效正整数值';
+            return l10n.get('pleaseInputValidNumber');
           }
           return null;
         },
       ),
     );
   }
-
 }
