@@ -9,7 +9,8 @@ import '../theme/app_colors.dart';
 import 'mixins/theme_state_mixin.dart';
 import 'mixins/records_state_mixin.dart';
 import 'mixins/click_mode_mixin.dart';
-import '../main.dart'; // 添加这行导入 navigatorKey
+import '../main.dart';
+import '../constants/clicker_constants.dart';
 
 class ClickerState
     with ChangeNotifier, ThemeStateMixin, RecordsStateMixin, ClickModeMixin {
@@ -84,6 +85,95 @@ class ClickerState
     super.dispose();
   }
 
+  void _handleClickException(ClickException e, int totalClicks) {
+    _countdownTimer?.cancel();
+    addTaskRecord(
+      totalClicks,
+      _progress,
+      false,
+      errorMessage: e.message,
+      duration: DateTime.now().difference(_taskStartTime!),
+      mode: clickMode.name,
+    );
+    _error = e.message;
+    _isRunning = false;
+    notifyListeners();
+  }
+  
+  Future<bool> _runCountdown() async {
+    _remainingSeconds = ClickerConstants.countdownDuration;
+    final countdownStartTime = DateTime.now();
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(
+      Duration(milliseconds: ClickerConstants.countdownUpdateInterval),
+      (timer) {
+        if (!_isRunning || _remainingSeconds <= 0) {
+          timer.cancel();
+          return;
+        }
+        final now = DateTime.now();
+        _remainingSeconds = max(
+          0.0,
+          ClickerConstants.countdownDuration -
+              now.difference(countdownStartTime).inMilliseconds / 1000,
+        );
+        notifyListeners();
+      },
+    );
+
+    while (_remainingSeconds > 0 && _isRunning) {
+      try {
+        _clickPosition = await MouseService.getCurrentPosition();
+        await Future.delayed(Duration(milliseconds: ClickerConstants.positionUpdateInterval));
+      } on ClickException catch (e) {
+        _handleClickException(e, 0);
+        return false;
+      }
+    }
+    return _isRunning;
+  }
+
+  // 执行点击任务的核心逻辑
+  Future<void> _executeClickTask(int totalClicks, Point basePosition) async {
+    final random = Random();
+    
+    for (var i = 0; i < totalClicks; i++) {
+      try {
+        if (clickMode == ClickMode.bionic) {
+          final xOffset = random.nextInt(ClickerConstants.clickPositionVariation * 2 + 1) - 
+              ClickerConstants.clickPositionVariation;
+          final yOffset = random.nextInt(ClickerConstants.clickPositionVariation * 2 + 1) - 
+              ClickerConstants.clickPositionVariation;
+
+          final clickPosition = Point(
+            basePosition.x + xOffset,
+            basePosition.y + yOffset,
+          );
+
+          await MouseService.clickAt(clickPosition);
+        } else {
+          await MouseService.click();
+        }
+
+        _progress = i + 1;
+        notifyListeners();
+
+        final baseDelay = ClickerConstants.baseClickDelay + 
+            (i ~/ ClickerConstants.clicksPerSpeedIncrease) * ClickerConstants.speedIncreaseStep;
+        final actualDelay = min(ClickerConstants.maxClickDelay, baseDelay);
+        final variation = random.nextInt(ClickerConstants.delayVariation * 2 + 1) - 
+            ClickerConstants.delayVariation;
+        
+        await Future.delayed(Duration(milliseconds: actualDelay + variation));
+      } on ClickException catch (e) {
+        _error = e.message;
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
   Future<void> startTask(int totalClicks) async {
     _controller.text = totalClicks.toString();
     _isRunning = true;
@@ -93,121 +183,26 @@ class ClickerState
     notifyListeners();
 
     try {
-      _remainingSeconds = 7.0;
-      final countdownStartTime = DateTime.now();
+      final countdownSuccess = await _runCountdown();
+      if (!countdownSuccess) return;
 
-      _countdownTimer?.cancel();
-      _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
-        timer,
-      ) {
-        if (!_isRunning || _remainingSeconds <= 0) {
-          timer.cancel();
-          return;
-        }
-
-        final now = DateTime.now();
-        _remainingSeconds = max(
-          0.0,
-          7.0 - now.difference(countdownStartTime).inMilliseconds / 1000,
-        );
-        notifyListeners();
-      });
-
-      // 等待倒计时结束
-      while (_remainingSeconds > 0 && _isRunning) {
-        try {
-          _clickPosition = await MouseService.getCurrentPosition();
-          await Future.delayed(const Duration(milliseconds: 100));
-        } // 等待倒计时结束时的错误处理
-        on ClickException catch (e) {
-          _countdownTimer?.cancel();
-          addTaskRecord(
-            totalClicks,
-            _progress,
-            false,
-            errorMessage: e.message,
-            duration: DateTime.now().difference(_taskStartTime!),
-            mode: clickMode.name,
-          );
-          _error = e.message;
-          _isRunning = false;
-          notifyListeners();
-          return;
-        }
-      }
-
-      if (!_isRunning) return;
-
-      // 最后一次获取鼠标位置，这将是实际任务的起始位置
+      // 获取最终点击位置
       try {
         _clickPosition = await MouseService.getCurrentPosition();
-        await Future.delayed(const Duration(milliseconds: 100));
-      } // 获取鼠标位置的错误处理
-      on ClickException catch (e) {
-        _countdownTimer?.cancel();
-        addTaskRecord(
-          totalClicks,
-          _progress,
-          false,
-          errorMessage: e.message,
-          duration: DateTime.now().difference(_taskStartTime!),
-          mode: clickMode.name,
-        );
-        _error = e.message;
-        _isRunning = false;
-        notifyListeners();
+      } on ClickException catch (e) {
+        _handleClickException(e, totalClicks);
         return;
       }
 
-      // 执行点击任务
       _progress = 0;
       final startTime = DateTime.now();
+      
       _currentTask = CancelableOperation.fromFuture(
-        Future(() async {
-          final random = Random();
-          final basePosition = _clickPosition!;
-
-          for (var i = 0; i < totalClicks; i++) {
-            try {
-              if (clickMode == ClickMode.bionic) {
-                // 计算浮动位置
-                final xOffset = random.nextInt(41) - 20;
-                final yOffset = random.nextInt(41) - 20;
-
-                final clickPosition = Point(
-                  basePosition.x + xOffset,
-                  basePosition.y + yOffset,
-                );
-
-                await MouseService.clickAt(clickPosition);
-              } else {
-                await MouseService.click();
-              }
-
-              _progress = i + 1;
-              notifyListeners();
-
-              // 计算基础间隔时间
-              final baseDelay = 120 + (i ~/ 300) * 30;
-              final actualDelay = min(600, baseDelay);
-
-              // 添加随机浮动
-              final variation = random.nextInt(41) - 20;
-              await Future.delayed(
-                Duration(milliseconds: actualDelay + variation),
-              );
-            } on ClickException catch (e) {
-              _error = e.message;
-              notifyListeners();
-              break;
-            }
-          }
-        }),
+        Future(() => _executeClickTask(totalClicks, _clickPosition!)),
       );
+
       try {
         await _currentTask?.value;
-
-        // 任务完成时添加记录
         addTaskRecord(
           totalClicks,
           _progress,
@@ -226,22 +221,9 @@ class ClickerState
           mode: clickMode.name,
         );
         rethrow;
-      } finally {
-        _isRunning = false;
-        notifyListeners();
       }
     } on ClickException catch (e) {
-      _countdownTimer?.cancel();
-      addTaskRecord(
-        totalClicks,
-        _progress,
-        false,
-        errorMessage: e.message,
-        duration: DateTime.now().difference(_taskStartTime!),
-        mode: clickMode.name,
-      );
-      _error = e.message;
-      notifyListeners();
+      _handleClickException(e, totalClicks);
       rethrow;
     } finally {
       if (_isRunning) {
