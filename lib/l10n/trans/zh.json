@@ -37,8 +37,13 @@
   "loading": "加载中...",
   "currentVersion": "当前版本",
   "versionNumber": "版本号",
-  "changelog": "更新日志",
   "contactDeveloper": "联系开发者",
   "sendEmail": "发送邮件",
-  "visitProjectPage": "访问项目主页"
+  "visitProjectPage": "访问项目主页",
+  "failed_get_mouse_position": "获取鼠标位置失败",
+  "failed_click": "点击失败",
+  "NO_PERMISSION": "需要辅助功能权限",
+  "INVALID_ARG": "无效参数",
+  "NO_SCREEN": "无法获取屏幕信息",
+  "unknown_error": "未知错误"
 }

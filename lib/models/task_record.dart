@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/mixins/click_mode_mixin.dart';
 
 class TaskRecord {
   final DateTime timestamp;
@@ -50,4 +51,49 @@ class TaskRecord {
     }
     return theme.primaryColor.withOpacity(0.15);
   }
+
+  String getMode(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (mode) {
+      case 'bionic':
+        return l10n.get('bionicMode');
+      case 'normal':
+        return l10n.get('normalMode');
+      default:
+        return mode;
+    }
+  }
+
+  String getDisplayMode(BuildContext context) {
+    // 根据存储的标识符获取对应的 ClickMode
+    final clickMode = ClickMode.values.firstWhere(
+      (m) => m.name == mode,
+      orElse: () => ClickMode.normal,
+    );
+    // 返回本地化的显示名称
+    return clickMode.getDisplayName(context);
+  }
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.millisecondsSinceEpoch,
+    'mode': mode,
+    'targetClicks': targetClicks,
+    'actualClicks': actualClicks,
+    'completed': completed,
+    'errorMessage': errorMessage,
+    'duration': duration?.inMilliseconds,
+  };
+
+  factory TaskRecord.fromJson(Map<String, dynamic> json) => TaskRecord(
+    timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int),
+    mode: json['mode'] as String,
+    targetClicks: json['targetClicks'] as int,
+    actualClicks: json['actualClicks'] as int,
+    completed: json['completed'] as bool,
+    errorMessage: json['errorMessage'] as String?,
+    duration:
+        json['duration'] != null
+            ? Duration(milliseconds: json['duration'] as int)
+            : null,
+  );
 }

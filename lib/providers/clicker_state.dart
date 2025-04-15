@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import 'mixins/theme_state_mixin.dart';
 import 'mixins/records_state_mixin.dart';
 import 'mixins/click_mode_mixin.dart';
+import '../main.dart'; // 添加这行导入 navigatorKey
 
 class ClickerState
     with ChangeNotifier, ThemeStateMixin, RecordsStateMixin, ClickModeMixin {
@@ -23,7 +24,6 @@ class ClickerState
   Point? _clickPosition;
   String? _error;
 
-  // Getters
   double get remainingSeconds => _remainingSeconds;
   int get progress => _progress;
   bool get isRunning => _isRunning;
@@ -44,37 +44,32 @@ class ClickerState
 
   void cancelTask() {
     if (!_isRunning) return;
-  
+
     final currentProgress = _progress;
     final targetClicks =
         _controller.text.isNotEmpty ? int.tryParse(_controller.text) ?? 0 : 0;
-  
+
     _currentTask?.cancel();
     _countdownTimer?.cancel();
-  
-    if (_currentTask != null) {
-      _currentTask!.cancel();
-      _currentTask = null;
-    }
-  
-    // 将 mode 参数改为枚举值
+
     addTaskRecord(
       targetClicks,
       currentProgress,
       false,
-      duration: _taskStartTime != null 
-          ? DateTime.now().difference(_taskStartTime!)
-          : null,
-      mode: clickMode.toString(), // 转换为字符串
+      duration:
+          _taskStartTime != null
+              ? DateTime.now().difference(_taskStartTime!)
+              : null,
+      mode: clickMode.name,
     );
-  
+
     _resetState();
   }
-  
+
   void _resetState() {
     _currentTask = null;
     _countdownTimer = null;
-    _taskStartTime = null; // 清除任务开始时间
+    _taskStartTime = null;
     _remainingSeconds = 7;
     _progress = 0;
     _isRunning = false;
@@ -123,16 +118,16 @@ class ClickerState
         try {
           _clickPosition = await MouseService.getCurrentPosition();
           await Future.delayed(const Duration(milliseconds: 100));
-        } on ClickException catch (e) {
+        } // 等待倒计时结束时的错误处理
+        on ClickException catch (e) {
           _countdownTimer?.cancel();
-          // 修改所有 addTaskRecord 调用
           addTaskRecord(
             totalClicks,
             _progress,
             false,
             errorMessage: e.message,
             duration: DateTime.now().difference(_taskStartTime!),
-            mode: clickMode.toString(), // 直接传递枚举值
+            mode: clickMode.name,
           );
           _error = e.message;
           _isRunning = false;
@@ -147,7 +142,8 @@ class ClickerState
       try {
         _clickPosition = await MouseService.getCurrentPosition();
         await Future.delayed(const Duration(milliseconds: 100));
-      } on ClickException catch (e) {
+      } // 获取鼠标位置的错误处理
+      on ClickException catch (e) {
         _countdownTimer?.cancel();
         addTaskRecord(
           totalClicks,
@@ -155,7 +151,7 @@ class ClickerState
           false,
           errorMessage: e.message,
           duration: DateTime.now().difference(_taskStartTime!),
-          mode: clickMode.toString(), // 修改这里：将 ClickMode 转换为字符串
+          mode: clickMode.name,
         );
         _error = e.message;
         _isRunning = false;
@@ -218,7 +214,7 @@ class ClickerState
           _error == null,
           errorMessage: _error,
           duration: DateTime.now().difference(startTime),
-          mode: clickMode.toString(), // 转换为字符串
+          mode: clickMode.name,
         );
       } catch (e) {
         addTaskRecord(
@@ -227,7 +223,7 @@ class ClickerState
           false,
           errorMessage: e.toString(),
           duration: DateTime.now().difference(startTime),
-          mode: clickMode.toString(), // 转换为字符串
+          mode: clickMode.name,
         );
         rethrow;
       } finally {
@@ -235,13 +231,14 @@ class ClickerState
         notifyListeners();
       }
     } on ClickException catch (e) {
+      _countdownTimer?.cancel();
       addTaskRecord(
         totalClicks,
         _progress,
         false,
         errorMessage: e.message,
         duration: DateTime.now().difference(_taskStartTime!),
-        mode: clickMode.toString(), // 转换为字符串
+        mode: clickMode.name,
       );
       _error = e.message;
       notifyListeners();
@@ -256,10 +253,10 @@ class ClickerState
   }
 
   // 添加locale相关属性和方法
-  Locale _locale = const Locale('zh'); // 默认中文
-  
+  Locale _locale = const Locale('zh');
+
   Locale get locale => _locale;
-  
+
   void changeLocale(Locale newLocale) {
     _locale = newLocale;
     notifyListeners();

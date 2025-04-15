@@ -42,7 +42,7 @@ mixin ThemeStateMixin on ChangeNotifier {
   Future<void> loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     _locale = Locale(prefs.getString('locale') ?? 'zh');
-    
+
     // 加载语言设置
     final savedLocale = prefs.getString('locale');
     if (savedLocale != null) {

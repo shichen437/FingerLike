@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
 import 'package:flutter/services.dart';
-import '../l10n/app_localizations.dart'; // 添加这行导入
+import '../l10n/app_localizations.dart';
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -32,13 +32,13 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context); // 确保在 build 方法中定义 l10n
+    final l10n = AppLocalizations.of(context);
     return Consumer<ClickerState>(
       builder: (context, state, child) {
         return KeyboardListener(
           focusNode: _focusNode,
           onKeyEvent: (event) {
-            if (event is KeyDownEvent && 
+            if (event is KeyDownEvent &&
                 event.logicalKey == LogicalKeyboardKey.keyC &&
                 HardwareKeyboard.instance.isControlPressed &&
                 state.isRunning) {
@@ -66,8 +66,8 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                             const SizedBox(height: 24),
                             Row(
                               children: [
-                                _buildCountInput(l10n), // 传递 l10n
-                                _buildControlButton(state, l10n), // 传递 l10n
+                                _buildCountInput(l10n),
+                                _buildControlButton(state, l10n),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -83,9 +83,9 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              _buildCountdownDisplay(state, l10n), // 传递 l10n
+                              _buildCountdownDisplay(state, l10n),
                               const SizedBox(height: 24),
-                              _buildProgressDisplay(state, l10n), // 传递 l10n
+                              _buildProgressDisplay(state, l10n),
                             ],
                           ),
                         ),
@@ -112,6 +112,7 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   }
 
   Widget _buildQuickSelectButtons() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Wrap(
         spacing: 12,
@@ -126,7 +127,10 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                   ),
                 ),
                 onPressed: () => _controller.text = count.toString(),
-                child: Text('$count 次', style: const TextStyle(fontSize: 16)),
+                child: Text(
+                  '$count ${l10n.get("times")}',
+                  style: const TextStyle(fontSize: 16),
+                ),
               );
             }).toList(),
       ),
@@ -268,7 +272,10 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
           labelText: l10n.get('clickCount'),
           border: const OutlineInputBorder(),
           suffixText: l10n.get('times'),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
         style: const TextStyle(fontSize: 16),
         validator: (value) {

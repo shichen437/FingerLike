@@ -22,7 +22,7 @@ void main() async {
 
 class FingerLike extends StatelessWidget {
   final ClickerState state = ClickerState();
-  
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -87,9 +87,40 @@ class _MainTabScreenState extends State<MainTabScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FingerLike'),
+        toolbarHeight: 88,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18.0),
+          child: ShaderMask(
+            shaderCallback: (bounds) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final baseColor =
+                  isDark ? Colors.white : Theme.of(context).primaryColor;
+              return LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  baseColor,
+                  baseColor.withOpacity(0.8),
+                  baseColor.withOpacity(0.6),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ).createShader(bounds);
+            },
+            child: Text(
+              'FingerLike',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.0,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -98,10 +129,10 @@ class _MainTabScreenState extends State<MainTabScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildTab(0, '主页'),
-                _buildTab(1, '历史'),
-                _buildTab(2, '设置'),
-                _buildTab(3, '关于'),  // 添加新的标签
+                _buildTab(0, l10n.get('home')),
+                _buildTab(1, l10n.get('history')),
+                _buildTab(2, l10n.get('settings')),
+                _buildTab(3, l10n.get('about')),
               ],
             ),
           ),
@@ -147,7 +178,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
         icon = Icons.settings;
         break;
       case 3:
-        icon = Icons.info_outline;  // 添加关于页面的图标
+        icon = Icons.info_outline;
         break;
       default:
         icon = Icons.circle;
@@ -179,9 +210,10 @@ class _MainTabScreenState extends State<MainTabScreen> {
             Text(
               tabTitle,
               style: TextStyle(
-                color: isSelected
-                    ? (isDark ? Colors.white : theme.primaryColor)
-                    : (isDark ? Colors.grey[400] : Colors.grey),
+                color:
+                    isSelected
+                        ? (isDark ? Colors.white : theme.primaryColor)
+                        : (isDark ? Colors.grey[400] : Colors.grey),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),

@@ -32,7 +32,7 @@ mixin RecordsStateMixin on ChangeNotifier {
     bool completed, {
     String? errorMessage,
     Duration? duration,
-    required String mode, // 改回使用 String 类型
+    required String mode,
   }) {
     _taskRecords.add(
       TaskRecord(

@@ -14,10 +14,7 @@ class SettingsPanel extends StatelessWidget {
     return ListTile(
       title: Text(l10n.get('language')),
       trailing: ToggleButtons(
-        constraints: BoxConstraints(
-          minHeight: 36.0,
-          minWidth: 60.0, // 增加最小宽度
-        ),
+        constraints: BoxConstraints(minHeight: 36.0, minWidth: 60.0),
         isSelected: [
           state.locale.languageCode == 'zh',
           state.locale.languageCode == 'en',
@@ -28,11 +25,17 @@ class SettingsPanel extends StatelessWidget {
         },
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // 调整垂直边距
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 4.0,
+            ), // 调整垂直边距
             child: Text('中文'),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // 调整垂直边距
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 4.0,
+            ), // 调整垂直边距
             child: Text('English'),
           ),
         ],
@@ -42,20 +45,24 @@ class SettingsPanel extends StatelessWidget {
 
   Widget _buildModeButtons(BuildContext context, ClickerState state) {
     return Column(
-      children: ClickMode.values.map((mode) {
-        return ListTile(
-          title: Text(mode.getDisplayName(context)),
-          leading: Radio<ClickMode>(
-            value: mode,
-            groupValue: state.clickMode,
-            onChanged: state.isRunning ? null : (value) {
-              if (value != null) {
-                state.setClickMode(value);
-              }
-            },
-          ),
-        );
-      }).toList(),
+      children:
+          ClickMode.values.map((mode) {
+            return ListTile(
+              title: Text(mode.getDisplayName(context)),
+              leading: Radio<ClickMode>(
+                value: mode,
+                groupValue: state.clickMode,
+                onChanged:
+                    state.isRunning
+                        ? null
+                        : (value) {
+                          if (value != null) {
+                            state.setClickMode(value);
+                          }
+                        },
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -73,9 +80,12 @@ class SettingsPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.get('clickMode'), style: const TextStyle(fontSize: 18)),
+                Text(
+                  l10n.get('clickMode'),
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 8),
-                _buildModeButtons(context, state), // 修改这里：传入 context
+                _buildModeButtons(context, state),
               ],
             ),
           ),
@@ -87,7 +97,10 @@ class SettingsPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.get('historyLimit'), style: const TextStyle(fontSize: 18)),
+                Text(
+                  l10n.get('historyLimit'),
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -120,33 +133,52 @@ class SettingsPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 添加标题
-                Text(l10n.get('interfaceSettings'), style: const TextStyle(fontSize: 18)),
+                Text(
+                  l10n.get('interfaceSettings'),
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 8),
                 // 主题颜色设置
                 ListTile(
                   title: Row(
                     children: [
                       Text(l10n.get('themeColor')),
-                      Spacer(), // 使用 Spacer 将选项推到右边
+                      Spacer(),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: state.availableColors.map((color) {
-                          final isSelected = state.primaryColor == color;
-                          return GestureDetector(
-                            onTap: () => state.setPrimaryColor(color),
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: color,
-                                borderRadius: BorderRadius.circular(20),
-                                border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-                                boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, spreadRadius: 2)] : null,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            state.availableColors.map((color) {
+                              final isSelected = state.primaryColor == color;
+                              return GestureDetector(
+                                onTap: () => state.setPrimaryColor(color),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border:
+                                        isSelected
+                                            ? Border.all(
+                                              color: Colors.white,
+                                              width: 3,
+                                            )
+                                            : null,
+                                    boxShadow:
+                                        isSelected
+                                            ? [
+                                              BoxShadow(
+                                                color: color.withOpacity(0.3),
+                                                blurRadius: 8,
+                                                spreadRadius: 2,
+                                              ),
+                                            ]
+                                            : null,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ],
                   ),
@@ -159,7 +191,7 @@ class SettingsPanel extends StatelessWidget {
                       Text(l10n.get('appearance')),
                       Spacer(),
                       ToggleButtons(
-                        constraints: BoxConstraints(minHeight: 36.0), // 调整高度
+                        constraints: BoxConstraints(minHeight: 36.0),
                         isSelected: [
                           state.themeMode == ThemeMode.system,
                           state.themeMode == ThemeMode.light,
@@ -184,15 +216,21 @@ class SettingsPanel extends StatelessWidget {
                         },
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                            ),
                             child: Text(l10n.get('followSystem')),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                            ),
                             child: Text(l10n.get('lightMode')),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                            ),
                             child: Text(l10n.get('darkMode')),
                           ),
                         ],

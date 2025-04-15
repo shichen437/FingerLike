@@ -18,8 +18,6 @@ class AboutPanel extends StatelessWidget {
         children: [
           _buildVersionCard(context),
           const SizedBox(height: 16),
-          _buildChangelogCard(context),
-          const SizedBox(height: 16),
           _buildContactCard(context),
         ],
       ),
@@ -31,7 +29,8 @@ class AboutPanel extends StatelessWidget {
     return FutureBuilder<PackageInfo>(
       future: PackageInfo.fromPlatform(),
       builder: (context, snapshot) {
-        final version = snapshot.hasData ? snapshot.data!.version : l10n.get('loading');
+        final version =
+            snapshot.hasData ? snapshot.data!.version : l10n.get('loading');
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -49,42 +48,6 @@ class AboutPanel extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildChangelogCard(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final dateFormat = DateFormat('yyyy-MM-dd');
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.get('changelog'),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            ...changelog.map((entry) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${entry.version} (${dateFormat.format(entry.date)})',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                ...entry.changes.map((change) => Padding(
-                  padding: const EdgeInsets.only(left: 16, bottom: 4),
-                  child: Text('• $change'),
-                )),
-                const SizedBox(height: 16),
-              ],
-            )).toList(),
-          ],
-        ),
-      ),
     );
   }
 
@@ -110,7 +73,8 @@ class AboutPanel extends StatelessWidget {
               leading: const Icon(Icons.code),
               title: const Text('GitHub'),
               subtitle: Text(l10n.get('visitProjectPage')),
-              onTap: () => _launchUrl('https://github.com/shichen437/FingerLike'),
+              onTap:
+                  () => _launchUrl('https://github.com/shichen437/FingerLike'),
             ),
           ],
         ),

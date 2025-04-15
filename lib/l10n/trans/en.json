@@ -37,8 +37,13 @@
   "loading": "Loading...",
   "currentVersion": "Current Version",
   "versionNumber": "Version",
-  "changelog": "Changelog",
   "contactDeveloper": "Contact Developer",
   "sendEmail": "Send Email",
-  "visitProjectPage": "Visit Project Page"
+  "visitProjectPage": "Visit Project Page",
+  "failed_get_mouse_position": "Failed to get mouse position",
+  "failed_click": "Click Failed",
+  "NO_PERMISSION": "Accessibility permission required",
+  "INVALID_ARG": "Invalid parameters",
+  "NO_SCREEN": "Failed to get screen info",
+  "unknown_error": "Unknown error"
 }
