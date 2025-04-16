@@ -171,8 +171,8 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                       borderRadius: BorderRadius.circular(3),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.primaryColor.withOpacity(
-                            0.3 * pulseValue,
+                          color: theme.primaryColor.withAlpha(
+                            (0.3 * pulseValue * 255).round(),
                           ),
                           blurRadius: 8 * pulseValue,
                           spreadRadius: 2 * pulseValue,
@@ -187,7 +187,9 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                               ? Colors.grey[800]
                               : Colors.grey[200],
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.primaryColor.withOpacity(pulseValue),
+                        theme.primaryColor.withAlpha(
+                          (pulseValue * 255).round(),
+                        ),
                       ),
                     ),
                   );
@@ -209,7 +211,9 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            border: Border.all(
+              color: theme.primaryColor.withAlpha((0.3 * 255).round()),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),

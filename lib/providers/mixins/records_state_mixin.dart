@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/task_record.dart';
-import 'click_mode_mixin.dart';
 
 mixin RecordsStateMixin on ChangeNotifier {
   final List<TaskRecord> _taskRecords = [];

@@ -8,65 +8,6 @@ import 'dart:io' show Platform;
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
 
-  Widget _buildLanguageSetting(BuildContext context) {
-    final state = Provider.of<ClickerState>(context);
-    final l10n = AppLocalizations.of(context);
-
-    return ListTile(
-      title: Text(l10n.get('language')),
-      trailing: ToggleButtons(
-        constraints: BoxConstraints(minHeight: 36.0, minWidth: 60.0),
-        isSelected: [
-          state.locale.languageCode == 'zh',
-          state.locale.languageCode == 'en',
-        ],
-        onPressed: (int index) {
-          final newLocale = index == 0 ? Locale('zh') : Locale('en');
-          state.changeLocale(newLocale);
-        },
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12.0,
-              vertical: 4.0,
-            ), // 调整垂直边距
-            child: Text('中文'),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12.0,
-              vertical: 4.0,
-            ), // 调整垂直边距
-            child: Text('English'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeButtons(BuildContext context, ClickerState state) {
-    return Column(
-      children:
-          ClickMode.values.map((mode) {
-            return ListTile(
-              title: Text(mode.getDisplayName(context)),
-              leading: Radio<ClickMode>(
-                value: mode,
-                groupValue: state.clickMode,
-                onChanged:
-                    state.isRunning
-                        ? null
-                        : (value) {
-                          if (value != null) {
-                            state.setClickMode(value);
-                          }
-                        },
-              ),
-            );
-          }).toList(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<ClickerState>(context);
@@ -140,53 +81,11 @@ class SettingsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 // 主题颜色设置
-                ListTile(
-                  title: Row(
-                    children: [
-                      Text(l10n.get('themeColor')),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: state.availableColors.map((color) {
-                              final isSelected = state.primaryColor == color;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: GestureDetector(
-                                  onTap: () => state.setPrimaryColor(color),
-                                  child: Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: Colors.white,
-                                              width: 3,
-                                            )
-                                          : null,
-                                      boxShadow: isSelected
-                                          ? [
-                                              BoxShadow(
-                                                color: color.withOpacity(0.3),
-                                                blurRadius: 8,
-                                                spreadRadius: 2,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                if (Platform.isAndroid) ...[
+                  _buildThemeColorAndroid(context, state),
+                ] else ...[
+                  _buildThemeColorDesktop(context, state),
+                ],
                 const SizedBox(height: 16),
                 // 外观模式设置
                 ListTile(
@@ -225,23 +124,23 @@ class SettingsPanel extends StatelessWidget {
                             const Icon(Icons.dark_mode),
                           ] else ...[
                             Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12.0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                              ),
+                              child: Text(l10n.get('followSystem')),
                             ),
-                            child: Text(l10n.get('followSystem')),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12.0,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                              ),
+                              child: Text(l10n.get('lightMode')),
                             ),
-                            child: Text(l10n.get('lightMode')),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12.0,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                              ),
+                              child: Text(l10n.get('darkMode')),
                             ),
-                            child: Text(l10n.get('darkMode')),
-                          ),
                           ],
                         ],
                       ),
@@ -257,6 +156,171 @@ class SettingsPanel extends StatelessWidget {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  Widget _buildThemeColorDesktop(BuildContext context, ClickerState state) {
+    final l10n = AppLocalizations.of(context);
+    return ListTile(
+      title: Text(l10n.get('themeColor')),
+      trailing: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.4,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children:
+                state.availableColors.map((color) {
+                  final isSelected = state.primaryColor == color;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => state.setPrimaryColor(color),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              isSelected
+                                  ? Border.all(color: Colors.white, width: 3)
+                                  : null,
+                          boxShadow:
+                              isSelected
+                                  ? [
+                                    BoxShadow(
+                                      color: color.withAlpha(
+                                        (0.3 * 255).round(),
+                                      ),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                  : null,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeColorAndroid(BuildContext context, ClickerState state) {
+    final l10n = AppLocalizations.of(context);
+    return ListTile(
+      title: Row(
+        children: [
+          Text(l10n.get('themeColor')),
+          const SizedBox(width: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children:
+                    state.availableColors.map((color) {
+                      final isSelected = state.primaryColor == color;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => state.setPrimaryColor(color),
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(20),
+                              border:
+                                  isSelected
+                                      ? Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      )
+                                      : null,
+                              boxShadow:
+                                  isSelected
+                                      ? [
+                                        BoxShadow(
+                                          color: color.withAlpha(
+                                            (0.3 * 255).round(),
+                                          ),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                      : null,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageSetting(BuildContext context) {
+    final state = Provider.of<ClickerState>(context);
+    final l10n = AppLocalizations.of(context);
+
+    return ListTile(
+      title: Text(l10n.get('language')),
+      trailing: ToggleButtons(
+        constraints: BoxConstraints(minHeight: 36.0, minWidth: 60.0),
+        isSelected: [
+          state.locale.languageCode == 'zh',
+          state.locale.languageCode == 'en',
+        ],
+        onPressed: (int index) {
+          final newLocale = index == 0 ? Locale('zh') : Locale('en');
+          state.changeLocale(newLocale);
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 4.0,
+            ), // 调整垂直边距
+            child: Text('中文'),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 4.0,
+            ), // 调整垂直边距
+            child: Text('English'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeButtons(BuildContext context, ClickerState state) {
+    return Column(
+      children:
+          ClickMode.values.map((mode) {
+            return ListTile(
+              title: Text(mode.getDisplayName(context)),
+              leading: Radio<ClickMode>(
+                value: mode,
+                groupValue: state.clickMode,
+                onChanged:
+                    state.isRunning
+                        ? null
+                        : (value) {
+                          if (value != null) {
+                            state.setClickMode(value);
+                          }
+                        },
+              ),
+            );
+          }).toList(),
     );
   }
 }

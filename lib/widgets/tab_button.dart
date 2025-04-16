@@ -29,7 +29,7 @@ class TabButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             color:
                 isSelected
-                    ? theme.primaryColor.withOpacity(0.1)
+                    ? theme.primaryColor.withAlpha((0.1 * 255).round())
                     : Colors.transparent,
           ),
           child: Row(
