@@ -81,7 +81,7 @@ class SettingsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 // 主题颜色设置
-                if (Platform.isAndroid) ...[
+                if (Platform.isAndroid || Platform.isIOS) ...[
                   _buildThemeColorAndroid(context, state),
                 ] else ...[
                   _buildThemeColorDesktop(context, state),
@@ -118,7 +118,7 @@ class SettingsPanel extends StatelessWidget {
                           state.setThemeMode(selectedMode);
                         },
                         children: [
-                          if (Platform.isAndroid) ...[
+                          if (Platform.isAndroid || Platform.isIOS) ...[
                             const Icon(Icons.settings_brightness),
                             const Icon(Icons.light_mode),
                             const Icon(Icons.dark_mode),

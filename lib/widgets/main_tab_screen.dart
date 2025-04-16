@@ -28,7 +28,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar:
-          Platform.isAndroid
+          Platform.isAndroid || Platform.isIOS
               ? AppBar(
                 toolbarHeight: 64,
                 title: Padding(
@@ -122,7 +122,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
               ),
       body: _widgetOptions.elementAt(_selectedIndex),
       bottomNavigationBar:
-          Platform.isAndroid
+          Platform.isAndroid || Platform.isIOS
               ? Container(
                 decoration: BoxDecoration(
                   border: Border(
@@ -152,7 +152,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     final isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final showText = !Platform.isAndroid; // 根据平台决定是否显示文字
+    final showText = !Platform.isAndroid && !Platform.isIOS; // 根据平台决定是否显示文字
 
     IconData icon;
     switch (index) {
