@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
 import '../providers/mixins/click_mode_mixin.dart';
 import '../l10n/app_localizations.dart';
+import 'dart:io' show Platform;
 
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
@@ -143,42 +144,45 @@ class SettingsPanel extends StatelessWidget {
                   title: Row(
                     children: [
                       Text(l10n.get('themeColor')),
-                      Spacer(),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children:
-                            state.availableColors.map((color) {
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: state.availableColors.map((color) {
                               final isSelected = state.primaryColor == color;
-                              return GestureDetector(
-                                onTap: () => state.setPrimaryColor(color),
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border:
-                                        isSelected
-                                            ? Border.all(
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: GestureDetector(
+                                  onTap: () => state.setPrimaryColor(color),
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: isSelected
+                                          ? Border.all(
                                               color: Colors.white,
                                               width: 3,
                                             )
-                                            : null,
-                                    boxShadow:
-                                        isSelected
-                                            ? [
+                                          : null,
+                                      boxShadow: isSelected
+                                          ? [
                                               BoxShadow(
                                                 color: color.withOpacity(0.3),
                                                 blurRadius: 8,
                                                 spreadRadius: 2,
                                               ),
                                             ]
-                                            : null,
+                                          : null,
+                                    ),
                                   ),
                                 ),
                               );
                             }).toList(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -215,7 +219,12 @@ class SettingsPanel extends StatelessWidget {
                           state.setThemeMode(selectedMode);
                         },
                         children: [
-                          Padding(
+                          if (Platform.isAndroid) ...[
+                            const Icon(Icons.settings_brightness),
+                            const Icon(Icons.light_mode),
+                            const Icon(Icons.dark_mode),
+                          ] else ...[
+                            Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12.0,
                             ),
@@ -233,6 +242,7 @@ class SettingsPanel extends StatelessWidget {
                             ),
                             child: Text(l10n.get('darkMode')),
                           ),
+                          ],
                         ],
                       ),
                     ],

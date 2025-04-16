@@ -1,0 +1,73 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+// 添加默认值
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: "1"
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: "1.0.0"
+
+android {
+    namespace "com.shichen437.FingerLike"
+    compileSdkVersion 35
+
+    ndkVersion "26.1.10909125"
+
+    signingConfigs {
+        release {
+            storeFile file("../upload-keystore.jks")
+            storePassword "FingerLike"
+            keyAlias "upload"
+            keyPassword "FingerLike"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    // 添加这个配置，确保APK输出到Flutter期望的位置
+    lintOptions {
+        disable 'InvalidPackage'
+        checkReleaseBuilds false
+    }
+
+    // 添加这个配置，指定APK输出路径
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "app-${variant.buildType.name}.apk"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    defaultConfig {
+        applicationId "com.shichen437.FingerLike"
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+}

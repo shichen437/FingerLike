@@ -32,6 +32,7 @@ class FingerLike extends StatelessWidget {
           return MaterialApp(
             navigatorKey: navigatorKey,
             title: 'FingerLike',
+            debugShowCheckedModeBanner: false,  // 添加这一行
             themeMode: state.themeMode,
             theme: ThemeData(
               colorScheme: ColorScheme.light(
@@ -89,56 +90,112 @@ class _MainTabScreenState extends State<MainTabScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 88,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18.0),
-          child: ShaderMask(
-            shaderCallback: (bounds) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              final baseColor =
-                  isDark ? Colors.white : Theme.of(context).primaryColor;
-              return LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  baseColor,
-                  baseColor.withOpacity(0.8),
-                  baseColor.withOpacity(0.6),
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ).createShader(bounds);
-            },
-            child: Text(
-              'FingerLike',
-              style: TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.0,
-                color: Colors.white,
-                height: 1.2,
+      appBar: Platform.isAndroid
+          ? AppBar(
+              toolbarHeight: 64,
+              title: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ShaderMask(
+                  shaderCallback: (bounds) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final baseColor =
+                        isDark ? Colors.white : Theme.of(context).primaryColor;
+                    return LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        baseColor,
+                        baseColor.withOpacity(0.8),
+                        baseColor.withOpacity(0.6),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ).createShader(bounds);
+                  },
+                  child: Text(
+                    'FingerLike',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              elevation: 0,
+            )
+          : AppBar(
+              toolbarHeight: 88,
+              title: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 18.0),
+                child: ShaderMask(
+                  shaderCallback: (bounds) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final baseColor =
+                        isDark ? Colors.white : Theme.of(context).primaryColor;
+                    return LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        baseColor,
+                        baseColor.withOpacity(0.8),
+                        baseColor.withOpacity(0.6),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ).createShader(bounds);
+                  },
+                  child: Text(
+                    'FingerLike',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              elevation: 0,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Container(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildTab(0, l10n.get('home')),
+                      _buildTab(1, l10n.get('history')),
+                      _buildTab(2, l10n.get('settings')),
+                      _buildTab(3, l10n.get('about')),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildTab(0, l10n.get('home')),
-                _buildTab(1, l10n.get('history')),
-                _buildTab(2, l10n.get('settings')),
-                _buildTab(3, l10n.get('about')),
-              ],
-            ),
-          ),
-        ),
-      ),
       body: _widgetOptions.elementAt(_selectedIndex),
+      bottomNavigationBar: Platform.isAndroid
+          ? Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildTab(0, l10n.get('home')),
+                  _buildTab(1, l10n.get('history')),
+                  _buildTab(2, l10n.get('settings')),
+                  _buildTab(3, l10n.get('about')),
+                ],
+              ),
+            )
+          : null,
     );
   }
 
@@ -147,24 +204,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
-
-    String tabTitle;
-    switch (index) {
-      case 0:
-        tabTitle = l10n.get('home');
-        break;
-      case 1:
-        tabTitle = l10n.get('history');
-        break;
-      case 2:
-        tabTitle = l10n.get('settings');
-        break;
-      case 3:
-        tabTitle = l10n.get('about');
-        break;
-      default:
-        tabTitle = '';
-    }
+    final showText = !Platform.isAndroid; // 根据平台决定是否显示文字
 
     IconData icon;
     switch (index) {
@@ -187,7 +227,10 @@ class _MainTabScreenState extends State<MainTabScreen> {
     return InkWell(
       onTap: () => setState(() => _selectedIndex = index),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding: EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: showText ? 24 : 16,
+        ),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -201,22 +244,22 @@ class _MainTabScreenState extends State<MainTabScreen> {
           children: [
             Icon(
               icon,
-              color:
-                  isSelected
+              color: isSelected
+                  ? (isDark ? Colors.white : theme.primaryColor)
+                  : (isDark ? Colors.grey[400] : Colors.grey),
+            ),
+            if (showText) ...[
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected
                       ? (isDark ? Colors.white : theme.primaryColor)
                       : (isDark ? Colors.grey[400] : Colors.grey),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              tabTitle,
-              style: TextStyle(
-                color:
-                    isSelected
-                        ? (isDark ? Colors.white : theme.primaryColor)
-                        : (isDark ? Colors.grey[400] : Colors.grey),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
