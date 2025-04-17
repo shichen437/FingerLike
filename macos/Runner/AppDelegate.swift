@@ -35,24 +35,6 @@ class AppDelegate: FlutterAppDelegate {
                 let position = MouseClickHandler.getCurrentPosition()
                 result(position)
                 
-            case "click":
-                guard let args = call.arguments as? [String: Any],
-                      let count = args["count"] as? Int else {
-                    result(FlutterError(code: "INVALID_ARG", message: "无效参数", details: nil))
-                    return
-                }
-                
-                guard MouseClickHandler.checkAccessibilityPermission() else {
-                    result(FlutterError(code: "NO_PERMISSION", 
-                           message: "需要辅助功能权限", details: nil))
-                    return
-                }
-                
-                DispatchQueue.global(qos: .userInitiated).async {
-                    MouseClickHandler.performMouseClick(count: count)
-                    result(nil)
-                }
-                
             case "clickAt":
                 guard let args = call.arguments as? [String: Any],
                       let x = args["x"] as? Double,
@@ -140,19 +122,6 @@ public class MouseClickHandler: NSObject {
         ]
     }
     
-    public static func performMouseClick(count: Int) {
-        let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
-                              mouseCursorPosition: .zero, mouseButton: .left)
-        let eventUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
-                            mouseCursorPosition: .zero, mouseButton: .left)
-        
-        for _ in 0..<count {
-            eventDown?.post(tap: .cghidEventTap)
-            eventUp?.post(tap: .cghidEventTap)
-            Thread.sleep(forTimeInterval: 0.001)
-        }
-    }
-    
     public static func performMouseClickAt(x: Double, y: Double) {
         let position = CGPoint(x: x, y: y)
         let eventDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
@@ -161,6 +130,7 @@ public class MouseClickHandler: NSObject {
                             mouseCursorPosition: position, mouseButton: .left)
         
         eventDown?.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: TimeInterval(10 + arc4random_uniform(15)) / 1000.0)
         eventUp?.post(tap: .cghidEventTap)
         Thread.sleep(forTimeInterval: 0.001)
     }

@@ -158,7 +158,7 @@ class ClickerState
 
           await MouseService.clickAt(clickPosition);
         } else {
-          await MouseService.click();
+          await MouseService.clickAt(basePosition);
         }
 
         _progress = i + 1;

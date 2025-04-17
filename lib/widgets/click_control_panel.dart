@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
 import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
+import '../services/mouse_service.dart';
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -21,6 +22,11 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     super.initState();
     _focusNode = FocusNode();
     _focusNode.requestFocus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final l10n = AppLocalizations.of(context);
+      MouseService.initialize(l10n);
+    });
   }
 
   @override
