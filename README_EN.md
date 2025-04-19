@@ -39,13 +39,16 @@ A simple mouse auto-clicker built with Flutter.
 2. Open the DMG file and drag the app to Applications folder
 3. First launch requires Accessibility permission in System Settings
 
-### Windows (Coming Soon)
+### Windows
 
-Under development...
+1. Download the latest EXE installer
+2. Run the EXE file to install
 
-### Android (Coming Soon)
+### Android
 
-Under development...
+1. Download the latest APK installer
+2. Install the APK file
+3. First launch requires Accessibility permission in system settings
 
 ### iOS/iPad (Coming Soon)
 
