@@ -119,27 +119,58 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
 
   Widget _buildQuickSelectButtons() {
     final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children:
-            [500, 1000, 3000].map((count) {
-              return ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 600;
+        
+        return Center(
+          child: isDesktop 
+              ? Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [500, 1000, 3000].map((count) {
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      onPressed: () => _controller.text = count.toString(),
+                      child: Text(
+                        '$count ${l10n.get("times")}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    );
+                  }).toList(),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [500, 1000, 3000].map((count) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            minimumSize: const Size(80, 36),
+                          ),
+                          onPressed: () => _controller.text = count.toString(),
+                          child: Text(
+                            '$count ${l10n.get("times")}',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
-                onPressed: () => _controller.text = count.toString(),
-                child: Text(
-                  '$count ${l10n.get("times")}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              );
-            }).toList(),
-      ),
+        );
+      },
     );
   }
 

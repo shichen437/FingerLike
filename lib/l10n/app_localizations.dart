@@ -40,6 +40,9 @@ class AppLocalizations {
     if (message.contains('无法获取屏幕')) {
       return get('NO_SCREEN');
     }
+    if (message.contains('请开启无障碍服务')) {
+      return get('ACCESSIBILITY_SERVICE');
+    }
     return message;
   }
 

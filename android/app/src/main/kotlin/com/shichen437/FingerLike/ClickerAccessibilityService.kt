@@ -1,4 +1,4 @@
-package com.shichen437.FingerLike
+package com.shichen437.fingerlike
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription

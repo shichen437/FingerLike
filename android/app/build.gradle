@@ -19,7 +19,7 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: "
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: "1.0.0"
 
 android {
-    namespace "com.shichen437.FingerLike"
+    namespace "com.shichen437.fingerlike"
     compileSdkVersion 35
 
     ndkVersion "26.1.10909125"
@@ -41,13 +41,11 @@ android {
         }
     }
 
-    // 添加这个配置，确保APK输出到Flutter期望的位置
     lintOptions {
         disable 'InvalidPackage'
         checkReleaseBuilds false
     }
 
-    // 添加这个配置，指定APK输出路径
     applicationVariants.all { variant ->
         variant.outputs.all {
             outputFileName = "app-${variant.buildType.name}.apk"
@@ -64,7 +62,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.shichen437.FingerLike"
+        applicationId "com.shichen437.fingerlike"
         minSdkVersion 21
         targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()

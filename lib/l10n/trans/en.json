@@ -45,5 +45,6 @@
   "NO_PERMISSION": "Accessibility permission required",
   "INVALID_ARG": "Invalid parameters",
   "NO_SCREEN": "Failed to get screen info",
+  "ACCESSIBILITY_SERVICE": "Accessibility service not started",
   "unknown_error": "Unknown error"
 }

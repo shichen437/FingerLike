@@ -3,6 +3,7 @@ import '../l10n/app_localizations.dart';
 import 'dart:io';
 import 'platform/macos_mouse_service.dart';
 import 'platform/windows_mouse_service.dart';
+import 'platform/android_mouse_service.dart';
 
 abstract class MousePlatformInterface {
   Future<Point> getCurrentPosition();
@@ -26,6 +27,8 @@ class MouseService {
       return MacOSMouseService(_channel, _l10n);
     } else if (Platform.isWindows) {
       return WindowsMouseService(_l10n);
+    } else if (Platform.isAndroid) {
+      return AndroidMouseService(_channel, _l10n);
     }
     throw UnsupportedError('当前平台不支持鼠标操作');
   }
@@ -38,6 +41,16 @@ class MouseService {
 
   static Future<void> clickAt(Point position) async {
     return _platformImpl.clickAt(position);
+  }
+  
+  // 添加坐标选择方法
+  static Future<Map<String, dynamic>> selectCoordinates() async {
+    if (Platform.isAndroid) {
+      return (await (_platformImpl as AndroidMouseService).selectCoordinates());
+    }
+    // 对于其他平台，直接返回当前位置
+    final position = await getCurrentPosition();
+    return {'confirmed': true, 'position': position};
   }
 }
 

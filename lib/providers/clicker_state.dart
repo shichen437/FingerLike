@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:async/async.dart';
 import '../services/mouse_service.dart';
@@ -123,6 +125,15 @@ class ClickerState
       },
     );
 
+    if (Platform.isAndroid || Platform.isIOS) {
+      // 安卓/iOS端：等待倒计时结束
+      while (_remainingSeconds > 0 && _isRunning) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return _isRunning;
+    }
+
+    // 其它平台原逻辑
     while (_remainingSeconds > 0 && _isRunning) {
       try {
         _clickPosition = await MouseService.getCurrentPosition();
@@ -191,15 +202,26 @@ class ClickerState
     notifyListeners();
 
     try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        final result = await MouseService.selectCoordinates();
+        if (result['confirmed'] != true) {
+          _resetState();
+          return;
+        }
+        _clickPosition = result['position'];
+      }
+
       final countdownSuccess = await _runCountdown();
       if (!countdownSuccess) return;
 
       // 获取最终点击位置
-      try {
-        _clickPosition = await MouseService.getCurrentPosition();
-      } on ClickException catch (e) {
-        _handleClickException(e, totalClicks);
-        return;
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        try {
+          _clickPosition = await MouseService.getCurrentPosition();
+        } on ClickException catch (e) {
+          _handleClickException(e, totalClicks);
+          return;
+        }
       }
 
       _progress = 0;

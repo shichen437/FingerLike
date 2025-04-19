@@ -162,48 +162,50 @@ class SettingsPanel extends StatelessWidget {
   Widget _buildThemeColorDesktop(BuildContext context, ClickerState state) {
     final l10n = AppLocalizations.of(context);
     return ListTile(
-      title: Text(l10n.get('themeColor')),
-      trailing: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.4,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children:
-                state.availableColors.map((color) {
-                  final isSelected = state.primaryColor == color;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => state.setPrimaryColor(color),
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(20),
-                          border:
-                              isSelected
-                                  ? Border.all(color: Colors.white, width: 3)
-                                  : null,
-                          boxShadow:
-                              isSelected
-                                  ? [
-                                    BoxShadow(
-                                      color: color.withAlpha(
-                                        (0.3 * 255).round(),
-                                      ),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
+      title: Text(
+        l10n.get('themeColor'),
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children:
+              state.availableColors.map((color) {
+                final isSelected = state.primaryColor == color;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: GestureDetector(
+                    onTap: () => state.setPrimaryColor(color),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            isSelected
+                                ? Border.all(color: Colors.white, width: 3)
+                                : null,
+                        boxShadow:
+                            isSelected
+                                ? [
+                                  BoxShadow(
+                                    color: color.withAlpha(
+                                      (0.3 * 255).round(),
                                     ),
-                                  ]
-                                  : null,
-                        ),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                                : null,
                       ),
                     ),
-                  );
-                }).toList(),
-          ),
+                  ),
+                );
+              }).toList(),
         ),
       ),
     );
