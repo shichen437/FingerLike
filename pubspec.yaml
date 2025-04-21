@@ -2,7 +2,7 @@ name: finger_like
 description: "一个简单的鼠标连点器。"
 publish_to: 'none'
 
-version: 0.0.1+1
+version: 0.0.2+1
 organization: "shichen437"
 
 environment:

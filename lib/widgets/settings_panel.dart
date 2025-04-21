@@ -119,9 +119,18 @@ class SettingsPanel extends StatelessWidget {
                         },
                         children: [
                           if (Platform.isAndroid || Platform.isIOS) ...[
-                            const Icon(Icons.settings_brightness),
-                            const Icon(Icons.light_mode),
-                            const Icon(Icons.dark_mode),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.0),
+                              child: Icon(Icons.settings_brightness),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.0),
+                              child: Icon(Icons.light_mode),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.0),
+                              child: Icon(Icons.dark_mode),
+                            ),
                           ] else ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -193,9 +202,7 @@ class SettingsPanel extends StatelessWidget {
                             isSelected
                                 ? [
                                   BoxShadow(
-                                    color: color.withAlpha(
-                                      (0.3 * 255).round(),
-                                    ),
+                                    color: color.withAlpha((0.3 * 255).round()),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),

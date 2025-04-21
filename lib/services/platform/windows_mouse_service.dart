@@ -6,6 +6,7 @@ import '../mouse_service.dart';
 import 'dart:math' as math;
 
 class WindowsMouseService implements MousePlatformInterface {
+  // ignore: unused_field
   final AppLocalizations? _l10n;
 
   WindowsMouseService(this._l10n);

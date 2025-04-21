@@ -34,16 +34,60 @@ class ClickerState
   @override
   Future<void> loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // 加载主题设置
     setPrimaryColor(
-      Color(
-        prefs.getInt('primaryColor') ?? AppColors.defaultThemeColor.toARGB32(),
-      ),
+      Color(prefs.getInt('primaryColor') ?? AppColors.defaultThemeColor.value),
     );
     setThemeMode(
       ThemeMode.values[prefs.getInt('themeMode') ?? ThemeMode.system.index],
     );
-    setClickMode(ClickMode.values[prefs.getInt('clickMode') ?? 0]);
+
+    // 加载点击模式
+    final savedClickMode = prefs.getInt('clickMode') ?? 0;
+    setClickMode(ClickMode.values[savedClickMode]);
+
+    // 加载历史记录限制
     setMaxRecords(prefs.getInt('maxRecords') ?? 20);
+
+    // 加载语言设置
+    final savedLocale = prefs.getString('locale');
+    if (savedLocale != null) {
+      _locale = Locale(savedLocale);
+    }
+  }
+
+  @override
+  Future<void> saveThemePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('primaryColor', primaryColor.toARGB32());
+    await prefs.setInt('themeMode', themeMode.index);
+  }
+
+  @override
+  void setThemeMode(ThemeMode mode) async {
+    super.setThemeMode(mode);
+    await saveThemePreferences();
+  }
+
+  @override
+  void setPrimaryColor(Color color) async {
+    super.setPrimaryColor(color);
+    await saveThemePreferences();
+  }
+
+  @override
+  void setClickMode(ClickMode mode) async {
+    super.setClickMode(mode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('clickMode', mode.index);
+  }
+
+  @override
+  void setMaxRecords(int value) async {
+    super.setMaxRecords(value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('maxRecords', value);
   }
 
   void cancelTask() {
@@ -270,8 +314,10 @@ class ClickerState
   @override
   Locale get locale => _locale;
 
-  void changeLocale(Locale newLocale) {
+  void changeLocale(Locale newLocale) async {
     _locale = newLocale;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('locale', newLocale.languageCode);
     notifyListeners();
   }
 }

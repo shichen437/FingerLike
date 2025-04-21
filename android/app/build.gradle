@@ -14,9 +14,12 @@ if (localPropertiesFile.exists()) {
 }
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
-// 添加默认值
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: "1"
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: "1.0.0"
+
+// 读取 pubspec.yaml 中的版本信息
+def flutterVersionInfo = file("../../pubspec.yaml").readLines().find { it.startsWith("version:") }
+def versions = flutterVersionInfo.replace("version:", "").trim().split("\\+")
+def flutterVersionName = versions[0]
+def flutterVersionCode = Integer.parseInt(versions[1])
 
 android {
     namespace "com.shichen437.fingerlike"

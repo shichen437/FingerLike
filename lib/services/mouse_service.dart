@@ -42,7 +42,7 @@ class MouseService {
   static Future<void> clickAt(Point position) async {
     return _platformImpl.clickAt(position);
   }
-  
+
   // 添加坐标选择方法
   static Future<Map<String, dynamic>> selectCoordinates() async {
     if (Platform.isAndroid) {

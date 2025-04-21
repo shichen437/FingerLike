@@ -4,6 +4,7 @@ import '../providers/clicker_state.dart';
 import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import '../services/mouse_service.dart';
+import 'dart:io' show Platform;
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -17,11 +18,37 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   final _formKey = GlobalKey<FormState>();
   late FocusNode _focusNode;
 
+  bool _handleKeyEvent(KeyEvent event) {
+    final state = Provider.of<ClickerState>(context, listen: false);
+    if (!state.isRunning) return false;
+
+    if (Platform.isAndroid || Platform.isIOS) {
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
+        state.cancelTask();
+        return true;
+      }
+    } else {
+      if (event is KeyDownEvent &&
+          HardwareKeyboard.instance.isControlPressed &&
+          HardwareKeyboard.instance.logicalKeysPressed.contains(
+            LogicalKeyboardKey.keyC,
+          ) &&
+          event.logicalKey == LogicalKeyboardKey.keyJ) {
+        state.cancelTask();
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
     _focusNode.requestFocus();
+
+    ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final l10n = AppLocalizations.of(context);
@@ -31,6 +58,7 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
 
   @override
   void dispose() {
+    ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -41,74 +69,63 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     final l10n = AppLocalizations.of(context);
     return Consumer<ClickerState>(
       builder: (context, state, child) {
-        return KeyboardListener(
-          focusNode: _focusNode,
-          onKeyEvent: (event) {
-            if (event is KeyDownEvent &&
-                event.logicalKey == LogicalKeyboardKey.keyC &&
-                HardwareKeyboard.instance.isControlPressed &&
-                state.isRunning) {
-              state.cancelTask();
-            }
-          },
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+        return SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.get('clickSettings'),
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              _buildCountInput(l10n),
+                              _buildControlButton(state, l10n),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _buildQuickSelectButtons(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (state.isRunning) ...[
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              l10n.get('clickSettings'),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
+                            _buildCountdownDisplay(state, l10n),
                             const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                _buildCountInput(l10n),
-                                _buildControlButton(state, l10n),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            _buildQuickSelectButtons(),
+                            _buildProgressDisplay(state, l10n),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    if (state.isRunning) ...[
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              _buildCountdownDisplay(state, l10n),
-                              const SizedBox(height: 24),
-                              _buildProgressDisplay(state, l10n),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    if (state.error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          state.error!,
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
                   ],
-                ),
+                  if (state.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        state.error!,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -122,53 +139,60 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 600;
-        
+
         return Center(
-          child: isDesktop 
-              ? Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [500, 1000, 3000].map((count) {
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                      onPressed: () => _controller.text = count.toString(),
-                      child: Text(
-                        '$count ${l10n.get("times")}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    );
-                  }).toList(),
-                )
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [500, 1000, 3000].map((count) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+          child:
+              isDesktop
+                  ? Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children:
+                        [500, 1000, 3000].map((count) {
+                          return ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
                             ),
-                            minimumSize: const Size(80, 36),
-                          ),
-                          onPressed: () => _controller.text = count.toString(),
-                          child: Text(
-                            '$count ${l10n.get("times")}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                            onPressed:
+                                () => _controller.text = count.toString(),
+                            child: Text(
+                              '$count ${l10n.get("times")}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }).toList(),
+                  )
+                  : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children:
+                          [500, 1000, 3000].map((count) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  minimumSize: const Size(80, 36),
+                                ),
+                                onPressed:
+                                    () => _controller.text = count.toString(),
+                                child: Text(
+                                  '$count ${l10n.get("times")}',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
                   ),
-                ),
         );
       },
     );

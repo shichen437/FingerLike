@@ -49,4 +49,10 @@ mixin ThemeStateMixin on ChangeNotifier {
       _locale = Locale(savedLocale);
     }
   }
+
+  Future<void> saveThemePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('primaryColor', primaryColor.value);
+    await prefs.setInt('themeMode', themeMode.index);
+  }
 }

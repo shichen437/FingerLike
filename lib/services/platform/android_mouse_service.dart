@@ -14,7 +14,9 @@ class AndroidMouseService implements MousePlatformInterface {
       final result = await _channel.invokeMethod('getCurrentPosition');
       return Point(result['x'], result['y']);
     } on PlatformException catch (e) {
-      throw ClickException(_l10n?.get("mousePositionError") ?? e.message ?? '获取位置失败');
+      throw ClickException(
+        _l10n?.get("mousePositionError") ?? e.message ?? '获取位置失败',
+      );
     }
   }
 
@@ -23,10 +25,7 @@ class AndroidMouseService implements MousePlatformInterface {
     try {
       final result = await _channel.invokeMethod('selectCoordinates');
       if (result['confirmed'] == true) {
-        return {
-          'confirmed': true,
-          'position': Point(result['x'], result['y'])
-        };
+        return {'confirmed': true, 'position': Point(result['x'], result['y'])};
       } else {
         return {'confirmed': false};
       }
@@ -51,8 +50,7 @@ class AndroidMouseService implements MousePlatformInterface {
       });
     } on PlatformException catch (e) {
       final errorMessage =
-          _l10n?.get("failed_click") ??
-          "Failed to get mouse position";
+          _l10n?.get("failed_click") ?? "Failed to get mouse position";
       final detailMessage =
           _l10n?.getErrorMessage(e.message ?? "unknown_error") ??
           e.message ??
