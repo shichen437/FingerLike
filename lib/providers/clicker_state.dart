@@ -170,14 +170,12 @@ class ClickerState
     );
 
     if (Platform.isAndroid || Platform.isIOS) {
-      // 安卓/iOS端：等待倒计时结束
       while (_remainingSeconds > 0 && _isRunning) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
       return _isRunning;
     }
 
-    // 其它平台原逻辑
     while (_remainingSeconds > 0 && _isRunning) {
       try {
         _clickPosition = await MouseService.getCurrentPosition();

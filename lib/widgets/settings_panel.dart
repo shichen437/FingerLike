@@ -295,14 +295,14 @@ class SettingsPanel extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: 12.0,
               vertical: 4.0,
-            ), // 调整垂直边距
+            ),
             child: Text('中文'),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 12.0,
               vertical: 4.0,
-            ), // 调整垂直边距
+            ),
             child: Text('English'),
           ),
         ],

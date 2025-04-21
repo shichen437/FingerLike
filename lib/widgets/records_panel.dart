@@ -75,7 +75,7 @@ class RecordsPanel extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 '${l10n.get('clickMode')}: ${record.getDisplayMode(context)}',
-                              ), // 使用 getDisplayMode 方法
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 '${l10n.get('targetClicks')}: ${record.targetClicks}',

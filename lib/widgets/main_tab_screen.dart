@@ -152,7 +152,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     final isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final showText = !Platform.isAndroid && !Platform.isIOS; // 根据平台决定是否显示文字
+    final showText = !Platform.isAndroid && !Platform.isIOS;
 
     IconData icon;
     switch (index) {

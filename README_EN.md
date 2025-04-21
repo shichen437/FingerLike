@@ -50,10 +50,6 @@ A simple mouse auto-clicker built with Flutter.
 2. Install the APK file
 3. First launch requires Accessibility permission in system settings
 
-### iOS/iPad (Coming Soon)
-
-Under development...
-
 ## Usage Guide
 
 1. Launch the app and select your preferred clicking mode:
@@ -62,7 +58,6 @@ Under development...
 2. Set the number of clicks
 3. Click start and wait for the countdown to complete
 4. Move your mouse to the target position before countdown ends
-5. Task can be terminated using Control+C
 
 ## Configuration
 

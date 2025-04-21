@@ -17,17 +17,17 @@ void main() async {
   runApp(
     ChangeNotifierProvider.value(
       value: clickerState,
-      child: const FingerLike(),  // 添加 const
+      child: const FingerLike(),
     ),
   );
 }
 
 class FingerLike extends StatelessWidget {
-  const FingerLike({super.key});  // 添加 const 构造函数
+  const FingerLike({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ClickerState>(  // 直接使用 Consumer
+    return Consumer<ClickerState>(
       builder: (context, state, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
