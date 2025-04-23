@@ -1,19 +1,16 @@
 import 'dart:io';
+import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:async/async.dart';
 import '../services/mouse_service.dart';
-import 'dart:math';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
-import '../theme/app_colors.dart';
-import 'mixins/theme_state_mixin.dart';
 import 'mixins/records_state_mixin.dart';
-import 'mixins/click_mode_mixin.dart';
 import '../constants/clicker_constants.dart';
+import '../constants/clicker_enums.dart';
+import 'settings_provider.dart';
 
-class ClickerState
-    with ChangeNotifier, ThemeStateMixin, RecordsStateMixin, ClickModeMixin {
+class ClickerState with ChangeNotifier, RecordsStateMixin {
   final TextEditingController _controller = TextEditingController();
   Timer? _countdownTimer;
   CancelableOperation? _currentTask;
@@ -21,77 +18,32 @@ class ClickerState
 
   double _remainingSeconds = 7.0;
   int _progress = 0;
-  bool _isRunning = false;
+  TaskStatus _taskStatus = TaskStatus.idle;
   Point? _clickPosition;
   String? _error;
 
+  final SettingsProvider _settingsProvider;
+
+  ClickerState(this._settingsProvider) {
+    _settingsProvider.addListener(_handleSettingsChange);
+  }
+
+  void _handleSettingsChange() {
+    notifyListeners();
+  }
+
+  bool get isRunning =>
+      _taskStatus == TaskStatus.countingDown ||
+      _taskStatus == TaskStatus.running;
+  TaskStatus get taskStatus => _taskStatus;
+
   double get remainingSeconds => _remainingSeconds;
   int get progress => _progress;
-  bool get isRunning => _isRunning;
   Point? get clickPosition => _clickPosition;
   String? get error => _error;
 
-  @override
-  Future<void> loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // 加载主题设置
-    setPrimaryColor(
-      Color(prefs.getInt('primaryColor') ?? AppColors.defaultThemeColor.value),
-    );
-    setThemeMode(
-      ThemeMode.values[prefs.getInt('themeMode') ?? ThemeMode.system.index],
-    );
-
-    // 加载点击模式
-    final savedClickMode = prefs.getInt('clickMode') ?? 0;
-    setClickMode(ClickMode.values[savedClickMode]);
-
-    // 加载历史记录限制
-    setMaxRecords(prefs.getInt('maxRecords') ?? 20);
-
-    // 加载语言设置
-    final savedLocale = prefs.getString('locale');
-    if (savedLocale != null) {
-      _locale = Locale(savedLocale);
-    }
-  }
-
-  @override
-  Future<void> saveThemePreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('primaryColor', primaryColor.toARGB32());
-    await prefs.setInt('themeMode', themeMode.index);
-  }
-
-  @override
-  void setThemeMode(ThemeMode mode) async {
-    super.setThemeMode(mode);
-    await saveThemePreferences();
-  }
-
-  @override
-  void setPrimaryColor(Color color) async {
-    super.setPrimaryColor(color);
-    await saveThemePreferences();
-  }
-
-  @override
-  void setClickMode(ClickMode mode) async {
-    super.setClickMode(mode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('clickMode', mode.index);
-  }
-
-  @override
-  void setMaxRecords(int value) async {
-    super.setMaxRecords(value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('maxRecords', value);
-  }
-
   void cancelTask() {
-    if (!_isRunning) return;
+    if (!isRunning) return;
 
     final currentProgress = _progress;
     final targetClicks =
@@ -99,6 +51,8 @@ class ClickerState
 
     _currentTask?.cancel();
     _countdownTimer?.cancel();
+
+    _taskStatus = TaskStatus.cancelled;
 
     addTaskRecord(
       targetClicks,
@@ -108,7 +62,8 @@ class ClickerState
           _taskStartTime != null
               ? DateTime.now().difference(_taskStartTime!)
               : null,
-      mode: clickMode.name,
+      mode: _settingsProvider.clickMode.name,
+      maxRecords: _settingsProvider.maxRecords,
     );
 
     _resetState();
@@ -118,9 +73,9 @@ class ClickerState
     _currentTask = null;
     _countdownTimer = null;
     _taskStartTime = null;
-    _remainingSeconds = 7;
+    _remainingSeconds = ClickerConstants.countdownDuration;
     _progress = 0;
-    _isRunning = false;
+    _taskStatus = TaskStatus.idle;
     _error = null;
     notifyListeners();
   }
@@ -129,33 +84,41 @@ class ClickerState
   void dispose() {
     _countdownTimer?.cancel();
     _controller.dispose();
+    _settingsProvider.removeListener(_handleSettingsChange);
     super.dispose();
   }
 
   void _handleClickException(ClickException e, int totalClicks) {
     _countdownTimer?.cancel();
+    _taskStatus = TaskStatus.error;
+    _error = e.message;
+
     addTaskRecord(
       totalClicks,
       _progress,
       false,
-      errorMessage: e.message,
-      duration: DateTime.now().difference(_taskStartTime!),
-      mode: clickMode.name,
+      errorMessage: _error,
+      duration:
+          _taskStartTime != null
+              ? DateTime.now().difference(_taskStartTime!)
+              : null,
+      mode: _settingsProvider.clickMode.name,
+      maxRecords: _settingsProvider.maxRecords,
     );
-    _error = e.message;
-    _isRunning = false;
+
     notifyListeners();
   }
 
   Future<bool> _runCountdown() async {
     _remainingSeconds = ClickerConstants.countdownDuration;
     final countdownStartTime = DateTime.now();
-
+    _taskStatus = TaskStatus.countingDown;
+    notifyListeners();
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(
       Duration(milliseconds: ClickerConstants.countdownUpdateInterval),
       (timer) {
-        if (!_isRunning || _remainingSeconds <= 0) {
+        if (_taskStatus != TaskStatus.countingDown || _remainingSeconds <= 0) {
           timer.cancel();
           return;
         }
@@ -170,13 +133,13 @@ class ClickerState
     );
 
     if (Platform.isAndroid || Platform.isIOS) {
-      while (_remainingSeconds > 0 && _isRunning) {
+      while (_remainingSeconds > 0 && isRunning) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
-      return _isRunning;
+      return _taskStatus == TaskStatus.countingDown;
     }
 
-    while (_remainingSeconds > 0 && _isRunning) {
+    while (_remainingSeconds > 0 && isRunning) {
       try {
         _clickPosition = await MouseService.getCurrentPosition();
         await Future.delayed(
@@ -187,16 +150,17 @@ class ClickerState
         return false;
       }
     }
-    return _isRunning;
+    return _taskStatus == TaskStatus.countingDown;
   }
 
-  // 执行点击任务的核心逻辑
   Future<void> _executeClickTask(int totalClicks, Point basePosition) async {
     final random = Random();
-
+    _taskStatus = TaskStatus.running;
+    notifyListeners();
     for (var i = 0; i < totalClicks; i++) {
+      if (_taskStatus != TaskStatus.running) break;
       try {
-        if (clickMode == ClickMode.bionic) {
+        if (_settingsProvider.clickMode == ClickMode.bionic) {
           final xOffset =
               random.nextInt(ClickerConstants.clickPositionVariation * 2 + 1) -
               ClickerConstants.clickPositionVariation;
@@ -228,20 +192,34 @@ class ClickerState
 
         await Future.delayed(Duration(milliseconds: actualDelay + variation));
       } on ClickException catch (e) {
-        _error = e.message;
-        notifyListeners();
-        break;
+        _handleClickException(e, totalClicks);
+        return;
       }
+    }
+    if (_taskStatus == TaskStatus.running) {
+      _taskStatus = TaskStatus.completed;
+      addTaskRecord(
+        totalClicks,
+        _progress,
+        true,
+        duration: DateTime.now().difference(_taskStartTime!),
+        mode: _settingsProvider.clickMode.name,
+        maxRecords: _settingsProvider.maxRecords,
+      );
+      _resetState();
     }
   }
 
   Future<void> startTask(int totalClicks) async {
+    if (isRunning) return;
     _controller.text = totalClicks.toString();
-    _isRunning = true;
+    _taskStatus = TaskStatus.idle;
     _error = null;
     _taskStartTime = DateTime.now();
     _progress = 0;
     notifyListeners();
+
+    Point? finalClickPosition;
 
     try {
       if (Platform.isAndroid || Platform.isIOS) {
@@ -250,72 +228,88 @@ class ClickerState
           _resetState();
           return;
         }
-        _clickPosition = result['position'];
+        finalClickPosition = result['position'];
+        _clickPosition = finalClickPosition;
+        notifyListeners();
       }
 
-      final countdownSuccess = await _runCountdown();
-      if (!countdownSuccess) return;
+      final countdownSuccessful = await _runCountdown();
+      if (!countdownSuccessful) {
+        if (_taskStatus != TaskStatus.error) {
+          _resetState();
+        }
+        return;
+      }
 
-      // 获取最终点击位置
+      // 获取最终点击位置 (桌面平台)
       if (!Platform.isAndroid && !Platform.isIOS) {
         try {
-          _clickPosition = await MouseService.getCurrentPosition();
+          finalClickPosition = await MouseService.getCurrentPosition();
+          _clickPosition = finalClickPosition;
+          notifyListeners();
         } on ClickException catch (e) {
           _handleClickException(e, totalClicks);
           return;
         }
       }
 
-      _progress = 0;
-      final startTime = DateTime.now();
-
-      _currentTask = CancelableOperation.fromFuture(
-        Future(() => _executeClickTask(totalClicks, _clickPosition!)),
-      );
-
-      try {
-        await _currentTask?.value;
+      if (finalClickPosition == null) {
+        _taskStatus = TaskStatus.error;
+        _error = "未能确定点击位置";
         addTaskRecord(
           totalClicks,
-          _progress,
-          _error == null,
+          0,
+          false,
           errorMessage: _error,
-          duration: DateTime.now().difference(startTime),
-          mode: clickMode.name,
+          mode: _settingsProvider.clickMode.name,
+          maxRecords: _settingsProvider.maxRecords,
         );
-      } catch (e) {
+        notifyListeners();
+        return;
+      }
+
+      _progress = 0;
+      notifyListeners();
+
+      _currentTask = CancelableOperation.fromFuture(
+        _executeClickTask(totalClicks, finalClickPosition),
+        onCancel: () {},
+      );
+
+      await _currentTask?.valueOrCancellation();
+    } on ClickException catch (e) {
+      if (_taskStatus != TaskStatus.error &&
+          _taskStatus != TaskStatus.cancelled) {
+        _handleClickException(e, totalClicks);
+      }
+    } catch (e) {
+      if (_taskStatus != TaskStatus.error &&
+          _taskStatus != TaskStatus.cancelled) {
+        _taskStatus = TaskStatus.error;
+        _error = "发生未知错误: ${e.toString()}";
         addTaskRecord(
           totalClicks,
           _progress,
           false,
-          errorMessage: e.toString(),
-          duration: DateTime.now().difference(startTime),
-          mode: clickMode.name,
+          errorMessage: _error,
+          duration:
+              _taskStartTime != null
+                  ? DateTime.now().difference(_taskStartTime!)
+                  : null,
+          mode: _settingsProvider.clickMode.name,
+          maxRecords: _settingsProvider.maxRecords,
         );
-        rethrow;
-      }
-    } on ClickException catch (e) {
-      _handleClickException(e, totalClicks);
-      rethrow;
-    } finally {
-      if (_isRunning) {
-        _isRunning = false;
         notifyListeners();
       }
+    } finally {
       _countdownTimer?.cancel();
+      _currentTask = null;
+
+      if (_taskStatus != TaskStatus.completed &&
+          _taskStatus != TaskStatus.cancelled &&
+          _taskStatus != TaskStatus.error) {
+        _resetState();
+      }
     }
-  }
-
-  // 添加locale相关属性和方法
-  Locale _locale = const Locale('zh');
-
-  @override
-  Locale get locale => _locale;
-
-  void changeLocale(Locale newLocale) async {
-    _locale = newLocale;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('locale', newLocale.languageCode);
-    notifyListeners();
   }
 }

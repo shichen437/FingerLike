@@ -1,5 +1,5 @@
 #define MyAppName "FingerLike"
-#define MyAppVersion "0.0.2"
+#define MyAppVersion "0.0.3"
 #define MyAppPublisher "shichen437"
 #define MyAppExeName "finger_like.exe"
 

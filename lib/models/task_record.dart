@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/mixins/click_mode_mixin.dart';
+import '../constants/clicker_enums.dart';
 
 class TaskRecord {
   final DateTime timestamp;
@@ -24,10 +24,12 @@ class TaskRecord {
   String getStatus(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (!completed) {
-      if (errorMessage != null) {
+      if (errorMessage != null &&
+          errorMessage!.isNotEmpty &&
+          errorMessage != "null") {
         final message =
             errorMessage!.contains(':')
-                ? errorMessage!.split(':').last.trim()
+                ? l10n.getErrorMessage(errorMessage!.split(':').last.trim())
                 : errorMessage!;
         return '${l10n.get("failed")}($message)';
       }
@@ -39,7 +41,7 @@ class TaskRecord {
   Color getStatusColor(BuildContext context) {
     final theme = Theme.of(context);
     if (!completed) {
-      return theme.primaryColor.withOpacity(0.7);
+      return theme.primaryColor.withAlpha((255 * 0.7).round());
     }
     return theme.primaryColor;
   }
@@ -47,9 +49,9 @@ class TaskRecord {
   Color getStatusBackgroundColor(BuildContext context) {
     final theme = Theme.of(context);
     if (!completed) {
-      return theme.primaryColor.withOpacity(0.1);
+      return theme.primaryColor.withAlpha((255 * 0.1).round());
     }
-    return theme.primaryColor.withOpacity(0.15);
+    return theme.primaryColor.withAlpha((255 * 0.15).round());
   }
 
   String getMode(BuildContext context) {

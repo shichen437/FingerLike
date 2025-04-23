@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/clicker_state.dart';
+import 'providers/settings_provider.dart';
 import 'widgets/main_tab_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
@@ -11,12 +12,18 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final clickerState = ClickerState();
-  await clickerState.loadPreferences();
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.initializeSettings();
+
+  final clickerState = ClickerState(settingsProvider);
+  await clickerState.loadTaskRecords();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: clickerState,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settingsProvider),
+        ChangeNotifierProvider.value(value: clickerState),
+      ],
       child: const FingerLike(),
     ),
   );
@@ -27,29 +34,33 @@ class FingerLike extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ClickerState>(
-      builder: (context, state, child) {
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsState, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'FingerLike',
           debugShowCheckedModeBanner: false,
-          themeMode: state.themeMode,
+          themeMode: settingsState.themeMode,
           theme: ThemeData(
             colorScheme: ColorScheme.light(
-              primary: state.primaryColor,
-              secondary: state.primaryColor.withAlpha((0.8 * 255).round()),
+              primary: settingsState.primaryColor,
+              secondary: settingsState.primaryColor.withAlpha(
+                (0.8 * 255).round(),
+              ),
             ),
             brightness: Brightness.light,
           ),
           darkTheme: ThemeData(
             colorScheme: ColorScheme.dark(
-              primary: state.primaryColor,
-              secondary: state.primaryColor.withAlpha((0.8 * 255).round()),
+              primary: settingsState.primaryColor,
+              secondary: settingsState.primaryColor.withAlpha(
+                (0.8 * 255).round(),
+              ),
             ),
             brightness: Brightness.dark,
           ),
           home: const MainTabScreen(),
-          locale: state.locale,
+          locale: settingsState.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: const [
             AppLocalizationsDelegate(),

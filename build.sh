@@ -4,6 +4,9 @@ DMG_NAME="${APP_NAME}.dmg"
 APP_PATH="build/macos/Build/Products/Release/${APP_NAME}.app"
 
 # 确保应用已经构建
+rm -rf FingerLike.dmg
+flutter clean
+flutter pub get
 flutter build macos --release
 
 # 创建 DMG

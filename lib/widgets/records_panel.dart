@@ -34,10 +34,7 @@ class RecordsPanel extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                     itemCount: state.taskRecords.length,
                     itemBuilder: (context, index) {
-                      final record =
-                          state.taskRecords[state.taskRecords.length -
-                              1 -
-                              index];
+                      final record = state.taskRecords[index];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: Padding(
@@ -56,9 +53,7 @@ class RecordsPanel extends StatelessWidget {
                                   ),
                                   Chip(
                                     label: Text(
-                                      record.completed
-                                          ? l10n.get('completed')
-                                          : l10n.get('failed'),
+                                      record.getStatus(context),
                                       style: TextStyle(
                                         color:
                                             Theme.of(context).brightness ==

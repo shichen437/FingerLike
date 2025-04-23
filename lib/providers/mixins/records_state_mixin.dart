@@ -1,28 +1,37 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/task_record.dart';
 
 mixin RecordsStateMixin on ChangeNotifier {
-  final List<TaskRecord> _taskRecords = [];
+  List<TaskRecord> _taskRecords = [];
   List<TaskRecord> get taskRecords => List.unmodifiable(_taskRecords);
 
-  int _maxRecords = 20;
-  int get maxRecords => _maxRecords;
-
-  void setMaxRecords(int value) {
-    _maxRecords = value.clamp(10, 100);
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt('maxRecords', _maxRecords);
-    });
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
+  Future<void> loadTaskRecords() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? recordsJson = prefs.getString('taskRecords');
+    if (recordsJson != null) {
+      try {
+        final List<dynamic> decodedList = jsonDecode(recordsJson);
+        _taskRecords =
+            decodedList
+                .map(
+                  (item) => TaskRecord.fromJson(item as Map<String, dynamic>),
+                )
+                .toList();
+      } catch (e) {
+        _taskRecords = [];
+      }
     }
     notifyListeners();
   }
 
-  void clearAllRecords() {
-    _taskRecords.clear();
-    notifyListeners();
+  Future<void> _saveTaskRecords() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String recordsJson = jsonEncode(
+      _taskRecords.map((record) => record.toJson()).toList(),
+    );
+    await prefs.setString('taskRecords', recordsJson);
   }
 
   void addTaskRecord(
@@ -32,22 +41,32 @@ mixin RecordsStateMixin on ChangeNotifier {
     String? errorMessage,
     Duration? duration,
     required String mode,
+    required int maxRecords,
   }) {
-    _taskRecords.add(
-      TaskRecord(
-        timestamp: DateTime.now(),
-        mode: mode,
-        targetClicks: targetClicks,
-        actualClicks: actualClicks,
-        completed: completed,
-        errorMessage: errorMessage,
-        duration: duration,
-      ),
+    final newRecord = TaskRecord(
+      timestamp: DateTime.now(),
+      mode: mode,
+      targetClicks: targetClicks,
+      actualClicks: actualClicks,
+      completed: completed,
+      errorMessage: errorMessage,
+      duration: duration,
     );
+    _taskRecords.insert(0, newRecord);
+    _applyMaxRecordsLimit(maxRecords);
+    _saveTaskRecords();
+    notifyListeners();
+  }
 
-    while (_taskRecords.length > _maxRecords) {
-      _taskRecords.removeAt(0);
+  void _applyMaxRecordsLimit(int maxRecords) {
+    while (_taskRecords.length > maxRecords) {
+      _taskRecords.removeLast();
     }
+  }
+
+  void clearAllRecords() {
+    _taskRecords.clear();
+    _saveTaskRecords();
     notifyListeners();
   }
 }

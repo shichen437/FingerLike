@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
-import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import '../services/mouse_service.dart';
-import 'dart:io' show Platform;
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -18,37 +16,11 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   final _formKey = GlobalKey<FormState>();
   late FocusNode _focusNode;
 
-  bool _handleKeyEvent(KeyEvent event) {
-    final state = Provider.of<ClickerState>(context, listen: false);
-    if (!state.isRunning) return false;
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      if (event is KeyDownEvent &&
-          event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
-        state.cancelTask();
-        return true;
-      }
-    } else {
-      if (event is KeyDownEvent &&
-          HardwareKeyboard.instance.isControlPressed &&
-          HardwareKeyboard.instance.logicalKeysPressed.contains(
-            LogicalKeyboardKey.keyC,
-          ) &&
-          event.logicalKey == LogicalKeyboardKey.keyJ) {
-        state.cancelTask();
-        return true;
-      }
-    }
-    return false;
-  }
-
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
     _focusNode.requestFocus();
-
-    ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final l10n = AppLocalizations.of(context);
@@ -58,7 +30,6 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
 
   @override
   void dispose() {
-    ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();

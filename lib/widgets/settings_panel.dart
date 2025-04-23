@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
-import '../providers/mixins/click_mode_mixin.dart';
+import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:io' show Platform;
+import '../constants/clicker_enums.dart';
 
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<ClickerState>(context);
+    final settingsState = Provider.of<SettingsProvider>(context);
+    final clickerState = Provider.of<ClickerState>(context);
     final l10n = AppLocalizations.of(context);
 
     return ListView(
@@ -27,7 +29,7 @@ class SettingsPanel extends StatelessWidget {
                   style: const TextStyle(fontSize: 18),
                 ),
                 const SizedBox(height: 8),
-                _buildModeButtons(context, state),
+                _buildModeButtons(context, settingsState, clickerState),
               ],
             ),
           ),
@@ -48,18 +50,18 @@ class SettingsPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Slider(
-                        value: state.maxRecords.toDouble(),
+                        value: settingsState.maxRecords.toDouble(),
                         min: 10,
                         max: 100,
                         divisions: 9,
-                        label: state.maxRecords.toString(),
+                        label: settingsState.maxRecords.toString(),
                         onChanged: (value) {
-                          state.setMaxRecords(value.toInt());
+                          settingsState.setMaxRecords(value.toInt());
                         },
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Text('${state.maxRecords}${l10n.get('records')}'),
+                    Text('${settingsState.maxRecords}${l10n.get('records')}'),
                   ],
                 ),
               ],
@@ -82,9 +84,9 @@ class SettingsPanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 // 主题颜色设置
                 if (Platform.isAndroid || Platform.isIOS) ...[
-                  _buildThemeColorAndroid(context, state),
+                  _buildThemeColorAndroid(context, settingsState),
                 ] else ...[
-                  _buildThemeColorDesktop(context, state),
+                  _buildThemeColorDesktop(context, settingsState),
                 ],
                 const SizedBox(height: 16),
                 // 外观模式设置
@@ -96,9 +98,9 @@ class SettingsPanel extends StatelessWidget {
                       ToggleButtons(
                         constraints: BoxConstraints(minHeight: 36.0),
                         isSelected: [
-                          state.themeMode == ThemeMode.system,
-                          state.themeMode == ThemeMode.light,
-                          state.themeMode == ThemeMode.dark,
+                          settingsState.themeMode == ThemeMode.system,
+                          settingsState.themeMode == ThemeMode.light,
+                          settingsState.themeMode == ThemeMode.dark,
                         ],
                         onPressed: (int index) {
                           ThemeMode selectedMode;
@@ -115,7 +117,7 @@ class SettingsPanel extends StatelessWidget {
                             default:
                               return;
                           }
-                          state.setThemeMode(selectedMode);
+                          settingsState.setThemeMode(selectedMode);
                         },
                         children: [
                           if (Platform.isAndroid || Platform.isIOS) ...[
@@ -158,7 +160,7 @@ class SettingsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 // 语言设置
-                _buildLanguageSetting(context),
+                _buildLanguageSetting(context, settingsState),
               ],
             ),
           ),
@@ -168,7 +170,10 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeColorDesktop(BuildContext context, ClickerState state) {
+  Widget _buildThemeColorDesktop(
+    BuildContext context,
+    SettingsProvider settingsState,
+  ) {
     final l10n = AppLocalizations.of(context);
     return ListTile(
       title: Text(
@@ -182,12 +187,12 @@ class SettingsPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children:
-              state.availableColors.map((color) {
-                final isSelected = state.primaryColor == color;
+              settingsState.availableColors.map((color) {
+                final isSelected = settingsState.primaryColor == color;
                 return Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: GestureDetector(
-                    onTap: () => state.setPrimaryColor(color),
+                    onTap: () => settingsState.setPrimaryColor(color),
                     child: Container(
                       width: 24,
                       height: 24,
@@ -218,7 +223,10 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeColorAndroid(BuildContext context, ClickerState state) {
+  Widget _buildThemeColorAndroid(
+    BuildContext context,
+    SettingsProvider settingsState,
+  ) {
     final l10n = AppLocalizations.of(context);
     return ListTile(
       title: Row(
@@ -230,12 +238,12 @@ class SettingsPanel extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children:
-                    state.availableColors.map((color) {
-                      final isSelected = state.primaryColor == color;
+                    settingsState.availableColors.map((color) {
+                      final isSelected = settingsState.primaryColor == color;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
-                          onTap: () => state.setPrimaryColor(color),
+                          onTap: () => settingsState.setPrimaryColor(color),
                           child: Container(
                             width: 24,
                             height: 24,
@@ -274,8 +282,10 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildLanguageSetting(BuildContext context) {
-    final state = Provider.of<ClickerState>(context);
+  Widget _buildLanguageSetting(
+    BuildContext context,
+    SettingsProvider settingsState,
+  ) {
     final l10n = AppLocalizations.of(context);
 
     return ListTile(
@@ -283,12 +293,12 @@ class SettingsPanel extends StatelessWidget {
       trailing: ToggleButtons(
         constraints: BoxConstraints(minHeight: 36.0, minWidth: 60.0),
         isSelected: [
-          state.locale.languageCode == 'zh',
-          state.locale.languageCode == 'en',
+          settingsState.locale.languageCode == 'zh',
+          settingsState.locale.languageCode == 'en',
         ],
         onPressed: (int index) {
           final newLocale = index == 0 ? Locale('zh') : Locale('en');
-          state.changeLocale(newLocale);
+          settingsState.changeLocale(newLocale);
         },
         children: [
           Padding(
@@ -310,7 +320,11 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildModeButtons(BuildContext context, ClickerState state) {
+  Widget _buildModeButtons(
+    BuildContext context,
+    SettingsProvider settingsState,
+    ClickerState clickerState,
+  ) {
     return Column(
       children:
           ClickMode.values.map((mode) {
@@ -318,13 +332,13 @@ class SettingsPanel extends StatelessWidget {
               title: Text(mode.getDisplayName(context)),
               leading: Radio<ClickMode>(
                 value: mode,
-                groupValue: state.clickMode,
+                groupValue: settingsState.clickMode,
                 onChanged:
-                    state.isRunning
+                    clickerState.isRunning
                         ? null
                         : (value) {
                           if (value != null) {
-                            state.setClickMode(value);
+                            settingsState.setClickMode(value);
                           }
                         },
               ),
