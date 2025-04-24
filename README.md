@@ -38,15 +38,21 @@
 1. 下载最新版本的 DMG 安装包
 2. 打开 DMG 文件并将应用拖入 Applications 文件夹
 3. 首次运行时，需要在系统偏好设置中允许辅助功能权限
+4. 任务开始后control+shift+j取消任务
 
 ### Windows
 1. 下载最新版本的 exe 安装包
 2. 打开 exe 文件进行安装
+3. 任务开始后ctrl+shift+j取消任务
 
 ### Android
 1. 下载最新版本的 APK 安装包
 2. 打开 APK 文件并进行安装
 3. 首次运行时，需要在系统设置中开启无障碍权限
+
+### 注意事项
+1. mac 端更新应用后需重新允许辅助功能权限
+2. 安卓端关闭应用后需要重新开启无障碍权限
 
 ## 使用指南
 
@@ -70,6 +76,8 @@
 ## 反馈与支持
 
 如有问题或建议，欢迎提交 Issue。
+
+[![加入 Discord 社区](https://img.shields.io/badge/Discord-加入讨论-5865F2?logo=discord&logoColor=white)](https://discord.gg/YK58hGU6)
 
 ## 许可证
 

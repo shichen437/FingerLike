@@ -44,14 +44,9 @@ class _DesktopHotKeyManager implements HotKeyManager {
 }
 
 class _MobileHotKeyManager implements HotKeyManager {
+  @override
+  Future<void> initialize(HotKeyCallback onHotKeyPressed) async {}
 
   @override
-  Future<void> initialize(HotKeyCallback onHotKeyPressed) async {
-    
-  }
-
-  @override
-  Future<void> dispose() async {
-    
-  }
+  Future<void> dispose() async {}
 }
