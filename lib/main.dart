@@ -6,6 +6,7 @@ import 'widgets/main_tab_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/app_localizations_delegate.dart';
+import 'services/hotkey_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -29,8 +30,37 @@ void main() async {
   );
 }
 
-class FingerLike extends StatelessWidget {
+class FingerLike extends StatefulWidget {
   const FingerLike({super.key});
+
+  @override
+  State<FingerLike> createState() => _FingerLikeState();
+}
+
+class _FingerLikeState extends State<FingerLike> {
+  late final HotKeyManager _hotKeyManager;
+
+  @override
+  void initState() {
+    super.initState();
+    _hotKeyManager = HotKeyManager();
+    final clickerState = Provider.of<ClickerState>(context, listen: false);
+    _initializeHotKey(clickerState);
+  }
+
+  Future<void> _initializeHotKey(ClickerState clickerState) async {
+    try {
+      await _hotKeyManager.initialize(clickerState.cancelTask);
+    } catch (e) {
+      // 占位
+    }
+  }
+
+  @override
+  void dispose() {
+    _hotKeyManager.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
