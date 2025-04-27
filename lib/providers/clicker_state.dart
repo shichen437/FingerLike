@@ -4,11 +4,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:async/async.dart';
-import '../services/mouse_service.dart';
+import 'settings_provider.dart';
 import 'mixins/records_state_mixin.dart';
 import '../constants/clicker_constants.dart';
+import '../services/mouse_service.dart';
 import '../constants/clicker_enums.dart';
-import 'settings_provider.dart';
 
 class ClickerState with ChangeNotifier, RecordsStateMixin {
   final TextEditingController _controller = TextEditingController();
@@ -310,6 +310,49 @@ class ClickerState with ChangeNotifier, RecordsStateMixin {
           _taskStatus != TaskStatus.error) {
         _resetState();
       }
+    }
+  }
+
+  double calculateEstimatedTime(int totalClicks) {
+    if (totalClicks <= 0) return 0;
+
+    double totalMilliseconds = 0;
+    int speedIncreaseStages =
+        (totalClicks - 1) ~/ ClickerConstants.clicksPerSpeedIncrease;
+    double clickOperationTime = _getPlatformClickTime();
+
+    // 计算每个阶段的点击数
+    int remainingClicks = totalClicks;
+    int baseClicks = min(
+      remainingClicks,
+      ClickerConstants.clicksPerSpeedIncrease,
+    );
+    remainingClicks -= baseClicks;
+
+    totalMilliseconds +=
+        baseClicks * (ClickerConstants.baseClickDelay + clickOperationTime);
+
+    if (remainingClicks > 0) {
+      double avgSpeedIncrease =
+          (speedIncreaseStages * ClickerConstants.speedIncreaseStep) / 2;
+      double avgDelay = min(
+        ClickerConstants.maxClickDelay.toDouble(),
+        ClickerConstants.baseClickDelay + avgSpeedIncrease,
+      );
+
+      totalMilliseconds += remainingClicks * avgDelay;
+    }
+
+    return totalMilliseconds / 1000;
+  }
+
+  double _getPlatformClickTime() {
+    if (Platform.isAndroid) {
+      return 100.0;
+    } else if (Platform.isMacOS || Platform.isWindows) {
+      return 50.0;
+    } else {
+      return 50.0;
     }
   }
 }

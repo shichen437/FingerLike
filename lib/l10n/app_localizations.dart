@@ -46,6 +46,26 @@ class AppLocalizations {
     return message;
   }
 
+  String getFormattedEstimatedTime(double estimatedTime) {
+    if (estimatedTime < 60) {
+      return estimatedTime.toStringAsFixed(1) + get("seconds");
+    } else if (estimatedTime < 3600) {
+      final minutes = (estimatedTime / 60).floor();
+      final remainingSeconds = estimatedTime % 60;
+      return minutes.toString() +
+          get("minutes") +
+          remainingSeconds.toStringAsFixed(0) +
+          get("seconds");
+    } else {
+      final hours = (estimatedTime / 3600).floor();
+      final minutes = ((estimatedTime % 3600) / 60).floor();
+      return hours.toString() +
+          get("hours") +
+          minutes.toString() +
+          get("minutes");
+    }
+  }
+
   // 添加 supportedLocales 属性
   static const List<Locale> supportedLocales = [
     Locale('en', ''),

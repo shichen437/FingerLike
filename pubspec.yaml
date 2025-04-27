@@ -2,7 +2,7 @@ name: finger_like
 description: "一个简单的鼠标连点器。"
 publish_to: 'none'
 
-version: 0.0.3+1
+version: 0.0.4+1
 organization: "shichen437"
 
 environment:
@@ -26,6 +26,7 @@ dependencies:
   url_launcher: ^6.1.12
   win32: ^5.12.0
   window_manager: ^0.4.3
+  sayings: ^0.0.6
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/clicker_state.dart';
 import '../l10n/app_localizations.dart';
 import '../services/mouse_service.dart';
+import '../services/sayings_service.dart';
 
 class ClickControlPanel extends StatefulWidget {
   const ClickControlPanel({super.key});
@@ -15,6 +16,7 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
   final _controller = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   late FocusNode _focusNode;
+  bool _hasInputText = false;
 
   @override
   void initState() {
@@ -22,14 +24,29 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
     _focusNode = FocusNode();
     _focusNode.requestFocus();
 
+    _controller.addListener(_updateTextState);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final l10n = AppLocalizations.of(context);
       MouseService.initialize(l10n);
     });
   }
 
+  void _updateTextState() {
+    final text = _controller.text;
+    final isValidNumber =
+        text.isNotEmpty && int.tryParse(text) != null && int.parse(text) > 0;
+
+    if (isValidNumber != _hasInputText) {
+      setState(() {
+        _hasInputText = isValidNumber;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_updateTextState);
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -71,7 +88,12 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
+                  if (!state.isRunning && _hasInputText)
+                    _buildEstimatedTimeWidget(state, l10n),
+                  if (!state.isRunning && !_hasInputText)
+                    _buildWeeklySayingsWidget(l10n),
+                  const SizedBox(height: 14),
                   if (state.isRunning) ...[
                     Card(
                       child: Padding(
@@ -101,6 +123,59 @@ class _ClickControlPanelState extends State<ClickControlPanel> {
             ),
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildEstimatedTimeWidget(ClickerState state, AppLocalizations l10n) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _controller,
+      builder: (context, value, child) {
+        final totalClicks = int.tryParse(value.text) ?? 0;
+        final theme = Theme.of(context);
+        final textColor = theme.colorScheme.primary;
+
+        return Center(
+          child: Text(
+            '${l10n.get("estimatedTime")}: ${l10n.getFormattedEstimatedTime(state.calculateEstimatedTime(totalClicks))}',
+            style: TextStyle(fontSize: 14, color: textColor),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWeeklySayingsWidget(AppLocalizations l10n) {
+    return FutureBuilder<String>(
+      future: SayingsService().getWeeklySayingsContent(
+        l10n.locale.languageCode,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Enjoy everyday!',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        } else {
+          final theme = Theme.of(context);
+          final textColor = theme.colorScheme.primary;
+
+          return Center(
+            child: Text(
+              snapshot.data ?? '',
+              style: TextStyle(
+                fontSize: theme.textTheme.bodyMedium?.fontSize,
+                color: textColor,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
       },
     );
   }

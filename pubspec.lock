@@ -341,6 +341,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.4"
+  sayings:
+    dependency: "direct main"
+    description:
+      name: sayings
+      sha256: "7deb13d14e6ea74ae4e48c1abb5e1800d7da5a012edc892f0e2d5c4b75169038"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.6"
   screen_retriever:
     dependency: transitive
     description:

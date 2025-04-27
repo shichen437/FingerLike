@@ -130,8 +130,8 @@ public class MouseClickHandler: NSObject {
                             mouseCursorPosition: position, mouseButton: .left)
         
         eventDown?.post(tap: .cghidEventTap)
-        Thread.sleep(forTimeInterval: TimeInterval(10 + arc4random_uniform(15)) / 1000.0)
+        Thread.sleep(forTimeInterval: TimeInterval(40 + arc4random_uniform(15)) / 1000.0)
         eventUp?.post(tap: .cghidEventTap)
-        Thread.sleep(forTimeInterval: 0.001)
+        Thread.sleep(forTimeInterval: 0.005)
     }
 }

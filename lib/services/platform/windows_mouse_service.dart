@@ -38,7 +38,7 @@ class WindowsMouseService implements MousePlatformInterface {
       SendInput(1, input, sizeOf<INPUT>());
 
       await Future.delayed(
-        Duration(milliseconds: 2 + math.Random().nextInt(9)),
+        Duration(milliseconds: 40 + math.Random().nextInt(20)),
       );
 
       input.ref.mi.dwFlags = MOUSEEVENTF_LEFTUP;
